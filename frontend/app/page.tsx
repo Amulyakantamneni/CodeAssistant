@@ -7,7 +7,7 @@ import { CodeInput } from '@/components/CodeInput';
 import { ToolSelector } from '@/components/ToolSelector';
 import { ResultsDashboard } from '@/components/ResultsDashboard';
 import { GitHubExport } from '@/components/GitHubExport';
-import { api, pollJobStatus } from '@/lib/api';
+import { api } from '@/lib/api';
 
 export default function Home() {
   // Input state
@@ -44,31 +44,37 @@ export default function Home() {
     setResults(initialResults);
 
     try {
-      // Launch all jobs in parallel
-      const jobPromises = selectedTools.map(async (tool: string) => {
+      // Launch all tools in parallel using sync endpoints (no Redis required)
+      const toolPromises = selectedTools.map(async (tool: string) => {
         try {
-          let jobResponse;
+          // Update to running status
+          setResults((prev: Record<string, { status: string; data?: any }>) => ({
+            ...prev,
+            [tool]: { status: 'running' },
+          }));
+
           const requestData = {
             code,
             language,
             github_url: githubUrl,
           };
 
+          let response;
           switch (tool) {
             case 'debug':
-              jobResponse = await api.jobs.debug(requestData);
+              response = await api.sync.debug(requestData);
               break;
             case 'refactor':
-              jobResponse = await api.jobs.refactor(requestData);
+              response = await api.sync.refactor(requestData);
               break;
             case 'optimize':
-              jobResponse = await api.jobs.optimize(requestData);
+              response = await api.sync.optimize(requestData);
               break;
             case 'test':
-              jobResponse = await api.jobs.test(requestData);
+              response = await api.sync.test(requestData);
               break;
             case 'pr':
-              jobResponse = await api.jobs.pr({
+              response = await api.sync.generatePR({
                 original_code: code,
                 modified_code: modifiedCode || code,
                 language,
@@ -78,50 +84,9 @@ export default function Home() {
               throw new Error(`Unknown tool: ${tool}`);
           }
 
-          return { tool, jobId: jobResponse.job_id };
-        } catch (error: any) {
-          console.error(`Error launching ${tool}:`, error);
-          return { tool, error: error.message };
-        }
-      });
-
-      const jobResults = await Promise.all(jobPromises);
-
-      // Poll for results
-      const pollPromises = jobResults.map(async ({ tool, jobId, error }: { tool: string; jobId?: string; error?: string }) => {
-        if (error) {
-          setResults((prev: Record<string, { status: string; data?: any }>) => ({
-            ...prev,
-            [tool]: { status: 'failed', data: { error } },
-          }));
-          return;
-        }
-
-        try {
-          // Update to running status
-          setResults((prev: Record<string, { status: string; data?: any }>) => ({
-            ...prev,
-            [tool]: { status: 'running' },
-          }));
-
-          const result = await pollJobStatus(
-            jobId!,
-            (update) => {
-              setResults((prev: Record<string, { status: string; data?: any }>) => ({
-                ...prev,
-                [tool]: {
-                  status: update.status,
-                  data: update.result?.data,
-                },
-              }));
-            },
-            1000,
-            300 // 5 minutes max
-          );
-
           // Extract modified code from results
-          if (result.result?.data) {
-            const data = result.result.data;
+          if (response.data) {
+            const data = response.data;
             if (data.fixedCode) {
               setModifiedCode(data.fixedCode);
             } else if (data.refactoredCode) {
@@ -134,11 +99,12 @@ export default function Home() {
           setResults((prev: Record<string, { status: string; data?: any }>) => ({
             ...prev,
             [tool]: {
-              status: result.status,
-              data: result.result?.data,
+              status: 'completed',
+              data: response.data,
             },
           }));
         } catch (error: any) {
+          console.error(`Error running ${tool}:`, error);
           setResults((prev: Record<string, { status: string; data?: any }>) => ({
             ...prev,
             [tool]: { status: 'failed', data: { error: error.message } },
@@ -146,7 +112,7 @@ export default function Home() {
         }
       });
 
-      await Promise.all(pollPromises);
+      await Promise.all(toolPromises);
 
       toast.success('Analysis complete!');
     } catch (error) {
