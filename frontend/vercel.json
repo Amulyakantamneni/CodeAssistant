@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "https://code-assistant-api.onrender.com/api/:path*"
+    }
+  ]
+}

@@ -38,14 +38,14 @@ export default function Home() {
 
     // Initialize results with pending status
     const initialResults: Record<string, { status: string; data?: any }> = {};
-    selectedTools.forEach((tool) => {
+    selectedTools.forEach((tool: string) => {
       initialResults[tool] = { status: 'pending' };
     });
     setResults(initialResults);
 
     try {
       // Launch all jobs in parallel
-      const jobPromises = selectedTools.map(async (tool) => {
+      const jobPromises = selectedTools.map(async (tool: string) => {
         try {
           let jobResponse;
           const requestData = {
@@ -88,9 +88,9 @@ export default function Home() {
       const jobResults = await Promise.all(jobPromises);
 
       // Poll for results
-      const pollPromises = jobResults.map(async ({ tool, jobId, error }) => {
+      const pollPromises = jobResults.map(async ({ tool, jobId, error }: { tool: string; jobId?: string; error?: string }) => {
         if (error) {
-          setResults((prev) => ({
+          setResults((prev: Record<string, { status: string; data?: any }>) => ({
             ...prev,
             [tool]: { status: 'failed', data: { error } },
           }));
@@ -99,7 +99,7 @@ export default function Home() {
 
         try {
           // Update to running status
-          setResults((prev) => ({
+          setResults((prev: Record<string, { status: string; data?: any }>) => ({
             ...prev,
             [tool]: { status: 'running' },
           }));
@@ -107,7 +107,7 @@ export default function Home() {
           const result = await pollJobStatus(
             jobId!,
             (update) => {
-              setResults((prev) => ({
+              setResults((prev: Record<string, { status: string; data?: any }>) => ({
                 ...prev,
                 [tool]: {
                   status: update.status,
@@ -131,7 +131,7 @@ export default function Home() {
             }
           }
 
-          setResults((prev) => ({
+          setResults((prev: Record<string, { status: string; data?: any }>) => ({
             ...prev,
             [tool]: {
               status: result.status,
@@ -139,7 +139,7 @@ export default function Home() {
             },
           }));
         } catch (error: any) {
-          setResults((prev) => ({
+          setResults((prev: Record<string, { status: string; data?: any }>) => ({
             ...prev,
             [tool]: { status: 'failed', data: { error: error.message } },
           }));
