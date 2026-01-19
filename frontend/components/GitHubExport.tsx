@@ -1,9 +1,28 @@
-import React, { useState } from 'react';
-import { Github, Upload, Check, AlertCircle, Key, GitBranch, FileCode, MessageSquare } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { api } from '../utils/api';
+'use client';
 
-export function GitHubExport({ code, results, onSuccess }) {
+import { useState } from 'react';
+import {
+  Github,
+  Upload,
+  Check,
+  AlertCircle,
+  Key,
+  GitBranch,
+  FileCode,
+  MessageSquare,
+  ChevronDown,
+} from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { api } from '@/lib/api';
+import { cn } from '@/lib/utils';
+
+interface GitHubExportProps {
+  code: string;
+  results?: any;
+  onSuccess?: (data: any) => void;
+}
+
+export function GitHubExport({ code, results, onSuccess }: GitHubExportProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -17,14 +36,17 @@ export function GitHubExport({ code, results, onSuccess }) {
     commitMessage: '',
     createPR: false,
     prTitle: '',
-    prBody: ''
+    prBody: '',
   });
 
-  const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    const { name, value, type } = e.target;
+    const checked = (e.target as HTMLInputElement).checked;
+    setFormData((prev) => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value
+      [name]: type === 'checkbox' ? checked : value,
     }));
   };
 
@@ -34,40 +56,39 @@ export function GitHubExport({ code, results, onSuccess }) {
     setSuccess('');
 
     try {
-      // First, export the code
-      const exportResult = await api.exportToGitHub(
+      const exportResult = await api.github.export({
         code,
-        formData.filename,
-        formData.repo,
-        formData.branch,
-        formData.commitMessage || `Update ${formData.filename} via Code Assistant`,
-        formData.githubToken
-      );
+        filename: formData.filename,
+        repo: formData.repo,
+        branch: formData.branch,
+        commit_message:
+          formData.commitMessage || `Update ${formData.filename} via Code Assistant`,
+        github_token: formData.githubToken,
+      });
 
       if (exportResult.success) {
-        let message = `Code exported successfully! View commit: ${exportResult.data.commitUrl}`;
+        let message = `Code exported successfully! View commit: ${exportResult.data.commit_url}`;
 
-        // If user wants to create a PR
         if (formData.createPR && formData.prTitle) {
-          const prResult = await api.createPR(
-            formData.repo,
-            formData.prTitle,
-            formData.prBody || results?.pr?.data?.fullMarkdown || '',
-            formData.branch,
-            'main',
-            formData.githubToken
-          );
+          const prResult = await api.github.createPR({
+            repo: formData.repo,
+            title: formData.prTitle,
+            body: formData.prBody || results?.pr?.data?.fullMarkdown || '',
+            head: formData.branch,
+            base: 'main',
+            github_token: formData.githubToken,
+          });
 
           if (prResult.success) {
-            message += `\n\nPR created: ${prResult.data.prUrl}`;
+            message += `\n\nPR created: ${prResult.data.pr_url}`;
           }
         }
 
         setSuccess(message);
         onSuccess?.(exportResult.data);
       }
-    } catch (err) {
-      setError(err.response?.data?.error || err.message || 'Export failed');
+    } catch (err: any) {
+      setError(err.response?.data?.detail || err.message || 'Export failed');
     } finally {
       setLoading(false);
     }
@@ -85,16 +106,13 @@ export function GitHubExport({ code, results, onSuccess }) {
           </div>
           <div className="text-left">
             <span className="font-semibold block">Export to GitHub</span>
-            <span className="text-sm text-gray-500 dark:text-gray-400">Push code and create PR</span>
+            <span className="text-sm text-gray-500 dark:text-gray-400">
+              Push code and create PR
+            </span>
           </div>
         </div>
-        <motion.div
-          animate={{ rotate: isOpen ? 180 : 0 }}
-          transition={{ duration: 0.2 }}
-        >
-          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-          </svg>
+        <motion.div animate={{ rotate: isOpen ? 180 : 0 }} transition={{ duration: 0.2 }}>
+          <ChevronDown className="w-5 h-5" />
         </motion.div>
       </button>
 
@@ -123,7 +141,15 @@ export function GitHubExport({ code, results, onSuccess }) {
                   className="w-full px-4 py-2 bg-gray-100 dark:bg-dark-700 border border-gray-300 dark:border-dark-600 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
                 />
                 <p className="text-xs text-gray-500 mt-1">
-                  Token needs repo scope. <a href="https://github.com/settings/tokens/new" target="_blank" rel="noopener noreferrer" className="text-primary-500 hover:underline">Create token</a>
+                  Token needs repo scope.{' '}
+                  <a
+                    href="https://github.com/settings/tokens/new"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary-500 hover:underline"
+                  >
+                    Create token
+                  </a>
                 </p>
               </div>
 
@@ -203,7 +229,10 @@ export function GitHubExport({ code, results, onSuccess }) {
                   onChange={handleChange}
                   className="w-4 h-4 text-primary-500 border-gray-300 rounded focus:ring-primary-500"
                 />
-                <label htmlFor="createPR" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                <label
+                  htmlFor="createPR"
+                  className="text-sm font-medium text-gray-700 dark:text-gray-300"
+                >
                   Also create a Pull Request
                 </label>
               </div>
@@ -242,7 +271,12 @@ export function GitHubExport({ code, results, onSuccess }) {
                     />
                     {results?.pr?.data?.fullMarkdown && (
                       <button
-                        onClick={() => setFormData(prev => ({ ...prev, prBody: results.pr.data.fullMarkdown }))}
+                        onClick={() =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            prBody: results.pr.data.fullMarkdown,
+                          }))
+                        }
                         className="text-xs text-primary-500 hover:underline mt-1"
                       >
                         Use generated PR description
@@ -275,15 +309,16 @@ export function GitHubExport({ code, results, onSuccess }) {
               <button
                 onClick={handleExport}
                 disabled={loading || !formData.githubToken || !formData.repo || !code}
-                className={`w-full py-3 rounded-xl font-semibold text-white transition-all flex items-center justify-center gap-2 ${
+                className={cn(
+                  'w-full py-3 rounded-xl font-semibold text-white transition-all flex items-center justify-center gap-2',
                   loading || !formData.githubToken || !formData.repo || !code
                     ? 'bg-gray-300 dark:bg-dark-600 cursor-not-allowed'
                     : 'bg-gradient-to-r from-gray-700 to-gray-900 hover:from-gray-800 hover:to-black'
-                }`}
+                )}
               >
                 {loading ? (
                   <>
-                    <div className="spinner" />
+                    <div className="spinner spinner-dark" />
                     Exporting...
                   </>
                 ) : (

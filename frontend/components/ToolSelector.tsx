@@ -1,6 +1,8 @@
-import React from 'react';
+'use client';
+
 import { Bug, Sparkles, Zap, TestTube, GitPullRequest, Layers } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { cn } from '@/lib/utils';
 
 const TOOLS = [
   {
@@ -50,17 +52,29 @@ const TOOLS = [
   },
 ];
 
-export function ToolSelector({ selectedTools, setSelectedTools, onRunTools, isLoading, hasInput }) {
-  const toggleTool = (toolId) => {
-    setSelectedTools((prev) =>
-      prev.includes(toolId)
-        ? prev.filter((t) => t !== toolId)
-        : [...prev, toolId]
+interface ToolSelectorProps {
+  selectedTools: string[];
+  setSelectedTools: (tools: string[] | ((prev: string[]) => string[])) => void;
+  onRunTools: () => void;
+  isLoading: boolean;
+  hasInput: boolean;
+}
+
+export function ToolSelector({
+  selectedTools,
+  setSelectedTools,
+  onRunTools,
+  isLoading,
+  hasInput,
+}: ToolSelectorProps) {
+  const toggleTool = (toolId: string) => {
+    setSelectedTools((prev: string[]) =>
+      prev.includes(toolId) ? prev.filter((t) => t !== toolId) : [...prev, toolId]
     );
   };
 
   const selectAll = () => {
-    setSelectedTools(TOOLS.filter(t => t.id !== 'pr').map((t) => t.id));
+    setSelectedTools(TOOLS.filter((t) => t.id !== 'pr').map((t) => t.id));
   };
 
   const clearAll = () => {
@@ -94,7 +108,7 @@ export function ToolSelector({ selectedTools, setSelectedTools, onRunTools, isLo
         Select multiple tools to run simultaneously on your code
       </p>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-3 mb-6">
         {TOOLS.map((tool) => {
           const isSelected = selectedTools.includes(tool.id);
           const Icon = tool.icon;
@@ -105,16 +119,15 @@ export function ToolSelector({ selectedTools, setSelectedTools, onRunTools, isLo
               onClick={() => toggleTool(tool.id)}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              className={`relative p-4 rounded-xl border-2 transition-all text-left ${
+              className={cn(
+                'relative p-4 rounded-xl border-2 transition-all text-left',
                 isSelected
                   ? `${tool.bgColor} border-current ${tool.textColor}`
                   : 'border-gray-200 dark:border-dark-600 hover:border-gray-300 dark:hover:border-dark-500'
-              }`}
+              )}
             >
               <div className="flex items-start gap-3">
-                <div
-                  className={`p-2 rounded-lg bg-gradient-to-br ${tool.color}`}
-                >
+                <div className={`p-2 rounded-lg bg-gradient-to-br ${tool.color}`}>
                   <Icon className="w-5 h-5 text-white" />
                 </div>
                 <div>
@@ -133,8 +146,16 @@ export function ToolSelector({ selectedTools, setSelectedTools, onRunTools, isLo
                   animate={{ scale: 1 }}
                   className="absolute top-2 right-2 w-5 h-5 bg-gradient-to-br from-green-500 to-emerald-500 rounded-full flex items-center justify-center"
                 >
-                  <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  <svg
+                    className="w-3 h-3 text-white"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                      clipRule="evenodd"
+                    />
                   </svg>
                 </motion.div>
               )}
@@ -146,11 +167,12 @@ export function ToolSelector({ selectedTools, setSelectedTools, onRunTools, isLo
       <button
         onClick={onRunTools}
         disabled={isLoading || selectedTools.length === 0 || !hasInput}
-        className={`w-full py-4 rounded-xl font-semibold text-white transition-all flex items-center justify-center gap-2 ${
+        className={cn(
+          'w-full py-4 rounded-xl font-semibold text-white transition-all flex items-center justify-center gap-2',
           isLoading || selectedTools.length === 0 || !hasInput
             ? 'bg-gray-300 dark:bg-dark-600 cursor-not-allowed'
             : 'bg-gradient-to-r from-primary-500 to-purple-600 hover:from-primary-600 hover:to-purple-700 shadow-lg hover:shadow-xl'
-        }`}
+        )}
       >
         {isLoading ? (
           <>

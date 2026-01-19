@@ -1,35 +1,45 @@
-import React, { useState } from 'react';
+'use client';
+
+import { useState, useCallback } from 'react';
 import { Code, Link, Upload, X } from 'lucide-react';
+import { cn, LANGUAGES, detectLanguageFromExtension } from '@/lib/utils';
 
-const LANGUAGES = [
-  'JavaScript', 'TypeScript', 'Python', 'Java', 'C++', 'C#', 'Go', 'Rust',
-  'Ruby', 'PHP', 'Swift', 'Kotlin', 'Scala', 'R', 'SQL', 'HTML', 'CSS', 'Other'
-];
+interface CodeInputProps {
+  code: string;
+  setCode: (code: string) => void;
+  githubUrl: string;
+  setGithubUrl: (url: string) => void;
+  language: string;
+  setLanguage: (lang: string) => void;
+}
 
-export function CodeInput({ code, setCode, githubUrl, setGithubUrl, language, setLanguage }) {
-  const [inputMode, setInputMode] = useState('code'); // 'code' or 'github'
+export function CodeInput({
+  code,
+  setCode,
+  githubUrl,
+  setGithubUrl,
+  language,
+  setLanguage,
+}: CodeInputProps) {
+  const [inputMode, setInputMode] = useState<'code' | 'github'>('code');
 
-  const handleFileUpload = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setCode(e.target.result);
-        // Auto-detect language from file extension
-        const ext = file.name.split('.').pop().toLowerCase();
-        const langMap = {
-          js: 'JavaScript', jsx: 'JavaScript', ts: 'TypeScript', tsx: 'TypeScript',
-          py: 'Python', java: 'Java', cpp: 'C++', cc: 'C++', c: 'C++',
-          cs: 'C#', go: 'Go', rs: 'Rust', rb: 'Ruby', php: 'PHP',
-          swift: 'Swift', kt: 'Kotlin', scala: 'Scala', r: 'R', sql: 'SQL'
+  const handleFileUpload = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          setCode(event.target?.result as string);
+          const detectedLang = detectLanguageFromExtension(file.name);
+          if (detectedLang) {
+            setLanguage(detectedLang);
+          }
         };
-        if (langMap[ext]) {
-          setLanguage(langMap[ext]);
-        }
-      };
-      reader.readAsText(file);
-    }
-  };
+        reader.readAsText(file);
+      }
+    },
+    [setCode, setLanguage]
+  );
 
   return (
     <div className="bg-white dark:bg-dark-800 rounded-2xl shadow-lg border border-gray-200 dark:border-dark-700 overflow-hidden">
@@ -37,22 +47,24 @@ export function CodeInput({ code, setCode, githubUrl, setGithubUrl, language, se
       <div className="flex border-b border-gray-200 dark:border-dark-700">
         <button
           onClick={() => setInputMode('code')}
-          className={`flex-1 px-4 py-3 flex items-center justify-center gap-2 font-medium transition-colors ${
+          className={cn(
+            'flex-1 px-4 py-3 flex items-center justify-center gap-2 font-medium transition-colors',
             inputMode === 'code'
               ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 border-b-2 border-primary-500'
               : 'text-gray-500 hover:bg-gray-50 dark:hover:bg-dark-700'
-          }`}
+          )}
         >
           <Code className="w-4 h-4" />
           Paste Code
         </button>
         <button
           onClick={() => setInputMode('github')}
-          className={`flex-1 px-4 py-3 flex items-center justify-center gap-2 font-medium transition-colors ${
+          className={cn(
+            'flex-1 px-4 py-3 flex items-center justify-center gap-2 font-medium transition-colors',
             inputMode === 'github'
               ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 border-b-2 border-primary-500'
               : 'text-gray-500 hover:bg-gray-50 dark:hover:bg-dark-700'
-          }`}
+          )}
         >
           <Link className="w-4 h-4" />
           GitHub URL
@@ -72,7 +84,9 @@ export function CodeInput({ code, setCode, githubUrl, setGithubUrl, language, se
           >
             <option value="">Auto-detect</option>
             {LANGUAGES.map((lang) => (
-              <option key={lang} value={lang}>{lang}</option>
+              <option key={lang} value={lang}>
+                {lang}
+              </option>
             ))}
           </select>
 
@@ -128,7 +142,8 @@ export function CodeInput({ code, setCode, githubUrl, setGithubUrl, language, se
               </button>
             )}
             <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-              Enter a direct link to a file on GitHub (e.g., https://github.com/user/repo/blob/main/src/file.js)
+              Enter a direct link to a file on GitHub (e.g.,
+              https://github.com/user/repo/blob/main/src/file.js)
             </p>
           </div>
         )}

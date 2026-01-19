@@ -1,14 +1,30 @@
-import React, { useState } from 'react';
+'use client';
+
+import { useState } from 'react';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark, oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import {
-  Bug, Sparkles, Zap, TestTube, GitPullRequest,
-  ChevronDown, ChevronUp, Copy, Check, AlertTriangle,
-  AlertCircle, Info, CheckCircle, X, Download
+  Bug,
+  Sparkles,
+  Zap,
+  TestTube,
+  GitPullRequest,
+  ChevronDown,
+  ChevronUp,
+  Copy,
+  Check,
+  AlertTriangle,
+  AlertCircle,
+  Info,
+  X,
+  Download,
+  Loader2,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useTheme } from './ThemeProvider';
+import { cn } from '@/lib/utils';
 
-const TOOL_CONFIG = {
+const TOOL_CONFIG: Record<string, { icon: any; name: string; color: string }> = {
   debug: { icon: Bug, name: 'Debugger', color: 'text-red-500' },
   debugger: { icon: Bug, name: 'Debugger', color: 'text-red-500' },
   refactor: { icon: Sparkles, name: 'Refactorizer', color: 'text-purple-500' },
@@ -21,14 +37,15 @@ const TOOL_CONFIG = {
   'pr-generator': { icon: GitPullRequest, name: 'PR Generator', color: 'text-blue-500' },
 };
 
-const SEVERITY_CONFIG = {
+const SEVERITY_CONFIG: Record<string, { icon: any; color: string; bg: string }> = {
   low: { icon: Info, color: 'text-blue-500', bg: 'bg-blue-50 dark:bg-blue-900/20' },
   medium: { icon: AlertTriangle, color: 'text-yellow-500', bg: 'bg-yellow-50 dark:bg-yellow-900/20' },
   high: { icon: AlertCircle, color: 'text-orange-500', bg: 'bg-orange-50 dark:bg-orange-900/20' },
   critical: { icon: AlertCircle, color: 'text-red-500', bg: 'bg-red-50 dark:bg-red-900/20' },
 };
 
-function CodeBlock({ code, language = 'javascript', darkMode }) {
+function CodeBlock({ code, language = 'javascript' }: { code: string; language?: string }) {
+  const { theme } = useTheme();
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
@@ -51,7 +68,7 @@ function CodeBlock({ code, language = 'javascript', darkMode }) {
       </button>
       <SyntaxHighlighter
         language={language.toLowerCase()}
-        style={darkMode ? oneDark : oneLight}
+        style={theme === 'dark' ? oneDark : oneLight}
         customStyle={{
           margin: 0,
           borderRadius: '0.75rem',
@@ -64,31 +81,57 @@ function CodeBlock({ code, language = 'javascript', darkMode }) {
   );
 }
 
-function ResultCard({ tool, data, darkMode, onExport }) {
+interface ResultCardProps {
+  tool: string;
+  data: any;
+  status: 'pending' | 'running' | 'completed' | 'failed';
+  onExport: (tool: string, data: any) => void;
+}
+
+function ResultCard({ tool, data, status, onExport }: ResultCardProps) {
   const [expanded, setExpanded] = useState(true);
   const config = TOOL_CONFIG[tool] || TOOL_CONFIG.debug;
   const Icon = config.icon;
 
-  const renderDebugResults = (data) => (
+  const renderDebugResults = (data: any) => (
     <div className="space-y-4">
       {data.severity && (
-        <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium ${SEVERITY_CONFIG[data.severity]?.bg} ${SEVERITY_CONFIG[data.severity]?.color}`}>
-          {React.createElement(SEVERITY_CONFIG[data.severity]?.icon || Info, { className: 'w-4 h-4' })}
+        <div
+          className={cn(
+            'inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium',
+            SEVERITY_CONFIG[data.severity]?.bg,
+            SEVERITY_CONFIG[data.severity]?.color
+          )}
+        >
+          {SEVERITY_CONFIG[data.severity]?.icon && (
+            <span>
+              {(() => {
+                const SeverityIcon = SEVERITY_CONFIG[data.severity]?.icon || Info;
+                return <SeverityIcon className="w-4 h-4" />;
+              })()}
+            </span>
+          )}
           {data.severity.charAt(0).toUpperCase() + data.severity.slice(1)} Severity
         </div>
       )}
 
-      {data.summary && (
-        <p className="text-gray-600 dark:text-gray-300">{data.summary}</p>
-      )}
+      {data.summary && <p className="text-gray-600 dark:text-gray-300">{data.summary}</p>}
 
       {data.syntaxErrors?.length > 0 && (
         <div>
-          <h4 className="font-semibold text-red-500 mb-2">Syntax Errors ({data.syntaxErrors.length})</h4>
-          {data.syntaxErrors.map((err, i) => (
+          <h4 className="font-semibold text-red-500 mb-2">
+            Syntax Errors ({data.syntaxErrors.length})
+          </h4>
+          {data.syntaxErrors.map((err: any, i: number) => (
             <div key={i} className="p-3 bg-red-50 dark:bg-red-900/20 rounded-lg mb-2">
-              <p className="text-sm"><span className="font-medium">Line {err.line}:</span> {err.error}</p>
-              {err.suggestion && <p className="text-sm text-green-600 dark:text-green-400 mt-1">Fix: {err.suggestion}</p>}
+              <p className="text-sm">
+                <span className="font-medium">Line {err.line}:</span> {err.error}
+              </p>
+              {err.suggestion && (
+                <p className="text-sm text-green-600 dark:text-green-400 mt-1">
+                  Fix: {err.suggestion}
+                </p>
+              )}
             </div>
           ))}
         </div>
@@ -96,11 +139,19 @@ function ResultCard({ tool, data, darkMode, onExport }) {
 
       {data.logicErrors?.length > 0 && (
         <div>
-          <h4 className="font-semibold text-orange-500 mb-2">Logic Errors ({data.logicErrors.length})</h4>
-          {data.logicErrors.map((err, i) => (
+          <h4 className="font-semibold text-orange-500 mb-2">
+            Logic Errors ({data.logicErrors.length})
+          </h4>
+          {data.logicErrors.map((err: any, i: number) => (
             <div key={i} className="p-3 bg-orange-50 dark:bg-orange-900/20 rounded-lg mb-2">
-              <p className="text-sm"><span className="font-medium">Line {err.line}:</span> {err.error}</p>
-              {err.suggestion && <p className="text-sm text-green-600 dark:text-green-400 mt-1">Fix: {err.suggestion}</p>}
+              <p className="text-sm">
+                <span className="font-medium">Line {err.line}:</span> {err.error}
+              </p>
+              {err.suggestion && (
+                <p className="text-sm text-green-600 dark:text-green-400 mt-1">
+                  Fix: {err.suggestion}
+                </p>
+              )}
             </div>
           ))}
         </div>
@@ -109,28 +160,30 @@ function ResultCard({ tool, data, darkMode, onExport }) {
       {data.fixedCode && (
         <div>
           <h4 className="font-semibold mb-2">Fixed Code</h4>
-          <CodeBlock code={data.fixedCode} darkMode={darkMode} />
+          <CodeBlock code={data.fixedCode} />
         </div>
       )}
     </div>
   );
 
-  const renderRefactorResults = (data) => (
+  const renderRefactorResults = (data: any) => (
     <div className="space-y-4">
-      {data.summary && (
-        <p className="text-gray-600 dark:text-gray-300">{data.summary}</p>
-      )}
+      {data.summary && <p className="text-gray-600 dark:text-gray-300">{data.summary}</p>}
 
       {data.readabilityScore && (
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
             <span className="text-sm text-gray-500">Before:</span>
-            <span className="font-semibold text-orange-500">{data.readabilityScore.before}/10</span>
+            <span className="font-semibold text-orange-500">
+              {data.readabilityScore.before}/10
+            </span>
           </div>
           <span className="text-gray-400">→</span>
           <div className="flex items-center gap-2">
             <span className="text-sm text-gray-500">After:</span>
-            <span className="font-semibold text-green-500">{data.readabilityScore.after}/10</span>
+            <span className="font-semibold text-green-500">
+              {data.readabilityScore.after}/10
+            </span>
           </div>
         </div>
       )}
@@ -139,8 +192,11 @@ function ResultCard({ tool, data, darkMode, onExport }) {
         <div>
           <h4 className="font-semibold mb-2">Principles Applied</h4>
           <div className="flex flex-wrap gap-2">
-            {data.principlesApplied.map((p, i) => (
-              <span key={i} className="px-3 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-full text-sm">
+            {data.principlesApplied.map((p: any, i: number) => (
+              <span
+                key={i}
+                className="px-3 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-full text-sm"
+              >
                 {p.principle}
               </span>
             ))}
@@ -151,29 +207,49 @@ function ResultCard({ tool, data, darkMode, onExport }) {
       {data.refactoredCode && (
         <div>
           <h4 className="font-semibold mb-2">Refactored Code</h4>
-          <CodeBlock code={data.refactoredCode} darkMode={darkMode} />
+          <CodeBlock code={data.refactoredCode} />
         </div>
       )}
     </div>
   );
 
-  const renderOptimizeResults = (data) => (
+  const renderOptimizeResults = (data: any) => (
     <div className="space-y-4">
-      {data.summary && (
-        <p className="text-gray-600 dark:text-gray-300">{data.summary}</p>
-      )}
+      {data.summary && <p className="text-gray-600 dark:text-gray-300">{data.summary}</p>}
 
       {data.performanceAnalysis && (
         <div className="grid grid-cols-2 gap-4">
           <div className="p-4 bg-gray-100 dark:bg-dark-700 rounded-xl">
             <h5 className="text-sm font-medium text-gray-500 mb-2">Original</h5>
-            <p className="text-sm">Time: <span className="font-mono font-semibold">{data.performanceAnalysis.original?.timeComplexity}</span></p>
-            <p className="text-sm">Space: <span className="font-mono font-semibold">{data.performanceAnalysis.original?.spaceComplexity}</span></p>
+            <p className="text-sm">
+              Time:{' '}
+              <span className="font-mono font-semibold">
+                {data.performanceAnalysis.original?.timeComplexity}
+              </span>
+            </p>
+            <p className="text-sm">
+              Space:{' '}
+              <span className="font-mono font-semibold">
+                {data.performanceAnalysis.original?.spaceComplexity}
+              </span>
+            </p>
           </div>
           <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-xl">
-            <h5 className="text-sm font-medium text-green-600 dark:text-green-400 mb-2">Optimized</h5>
-            <p className="text-sm">Time: <span className="font-mono font-semibold">{data.performanceAnalysis.optimized?.timeComplexity}</span></p>
-            <p className="text-sm">Space: <span className="font-mono font-semibold">{data.performanceAnalysis.optimized?.spaceComplexity}</span></p>
+            <h5 className="text-sm font-medium text-green-600 dark:text-green-400 mb-2">
+              Optimized
+            </h5>
+            <p className="text-sm">
+              Time:{' '}
+              <span className="font-mono font-semibold">
+                {data.performanceAnalysis.optimized?.timeComplexity}
+              </span>
+            </p>
+            <p className="text-sm">
+              Space:{' '}
+              <span className="font-mono font-semibold">
+                {data.performanceAnalysis.optimized?.spaceComplexity}
+              </span>
+            </p>
           </div>
         </div>
       )}
@@ -181,30 +257,33 @@ function ResultCard({ tool, data, darkMode, onExport }) {
       {data.optimizedCode && (
         <div>
           <h4 className="font-semibold mb-2">Optimized Code</h4>
-          <CodeBlock code={data.optimizedCode} darkMode={darkMode} />
+          <CodeBlock code={data.optimizedCode} />
         </div>
       )}
     </div>
   );
 
-  const renderTestResults = (data) => (
+  const renderTestResults = (data: any) => (
     <div className="space-y-4">
-      {data.summary && (
-        <p className="text-gray-600 dark:text-gray-300">{data.summary}</p>
-      )}
+      {data.summary && <p className="text-gray-600 dark:text-gray-300">{data.summary}</p>}
 
       {data.testCases?.length > 0 && (
         <div>
           <h4 className="font-semibold mb-2">Test Cases ({data.testCases.length})</h4>
-          {data.testCases.slice(0, 5).map((test, i) => (
+          {data.testCases.slice(0, 5).map((test: any, i: number) => (
             <div key={i} className="p-3 bg-gray-100 dark:bg-dark-700 rounded-lg mb-2">
               <div className="flex items-center justify-between mb-1">
                 <span className="font-medium text-sm">{test.name}</span>
-                <span className={`text-xs px-2 py-0.5 rounded-full ${
-                  test.type === 'unit' ? 'bg-blue-100 text-blue-600' :
-                  test.type === 'edge' ? 'bg-orange-100 text-orange-600' :
-                  'bg-green-100 text-green-600'
-                }`}>
+                <span
+                  className={cn(
+                    'text-xs px-2 py-0.5 rounded-full',
+                    test.type === 'unit'
+                      ? 'bg-blue-100 text-blue-600'
+                      : test.type === 'edge'
+                      ? 'bg-orange-100 text-orange-600'
+                      : 'bg-green-100 text-green-600'
+                  )}
+                >
                   {test.type}
                 </span>
               </div>
@@ -217,26 +296,25 @@ function ResultCard({ tool, data, darkMode, onExport }) {
       {data.testCode && (
         <div>
           <h4 className="font-semibold mb-2">Generated Tests</h4>
-          <CodeBlock code={data.testCode} darkMode={darkMode} />
+          <CodeBlock code={data.testCode} />
         </div>
       )}
     </div>
   );
 
-  const renderPRResults = (data) => (
+  const renderPRResults = (data: any) => (
     <div className="space-y-4">
-      {data.title && (
-        <h3 className="text-xl font-bold">{data.title}</h3>
-      )}
+      {data.title && <h3 className="text-xl font-bold">{data.title}</h3>}
 
-      {data.summary && (
-        <p className="text-gray-600 dark:text-gray-300">{data.summary}</p>
-      )}
+      {data.summary && <p className="text-gray-600 dark:text-gray-300">{data.summary}</p>}
 
       {data.labels?.length > 0 && (
         <div className="flex flex-wrap gap-2">
-          {data.labels.map((label, i) => (
-            <span key={i} className="px-3 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full text-sm">
+          {data.labels.map((label: string, i: number) => (
+            <span
+              key={i}
+              className="px-3 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full text-sm"
+            >
               {label}
             </span>
           ))}
@@ -252,6 +330,27 @@ function ResultCard({ tool, data, darkMode, onExport }) {
   );
 
   const renderContent = () => {
+    if (status === 'pending' || status === 'running') {
+      return (
+        <div className="flex items-center justify-center py-8">
+          <Loader2 className="w-8 h-8 animate-spin text-primary-500" />
+          <span className="ml-3 text-gray-500">
+            {status === 'pending' ? 'Queued...' : 'Processing...'}
+          </span>
+        </div>
+      );
+    }
+
+    if (status === 'failed') {
+      return (
+        <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-lg text-red-600 dark:text-red-400">
+          Analysis failed. Please try again.
+        </div>
+      );
+    }
+
+    if (!data) return null;
+
     if (data.raw) {
       return <pre className="text-sm whitespace-pre-wrap">{data.raw}</pre>;
     }
@@ -288,19 +387,24 @@ function ResultCard({ tool, data, darkMode, onExport }) {
         className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-dark-700/50 transition-colors"
       >
         <div className="flex items-center gap-3">
-          <Icon className={`w-5 h-5 ${config.color}`} />
+          <Icon className={cn('w-5 h-5', config.color)} />
           <span className="font-semibold">{config.name} Results</span>
+          {(status === 'pending' || status === 'running') && (
+            <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
+          )}
         </div>
         <div className="flex items-center gap-2">
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onExport(tool, data);
-            }}
-            className="p-2 hover:bg-gray-200 dark:hover:bg-dark-600 rounded-lg transition-colors"
-          >
-            <Download className="w-4 h-4" />
-          </button>
+          {status === 'completed' && data && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onExport(tool, data);
+              }}
+              className="p-2 hover:bg-gray-200 dark:hover:bg-dark-600 rounded-lg transition-colors"
+            >
+              <Download className="w-4 h-4" />
+            </button>
+          )}
           {expanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
         </div>
       </button>
@@ -322,8 +426,13 @@ function ResultCard({ tool, data, darkMode, onExport }) {
   );
 }
 
-export function ResultsDashboard({ results, darkMode, onClear }) {
-  const handleExport = (tool, data) => {
+interface ResultsDashboardProps {
+  results: Record<string, { status: string; data?: any }>;
+  onClear: () => void;
+}
+
+export function ResultsDashboard({ results, onClear }: ResultsDashboardProps) {
+  const handleExport = (tool: string, data: any) => {
     const content = JSON.stringify(data, null, 2);
     const blob = new Blob([content], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -355,9 +464,9 @@ export function ResultsDashboard({ results, darkMode, onClear }) {
         {Object.entries(results).map(([tool, result]) => (
           <ResultCard
             key={tool}
-            tool={result?.tool || tool}
-            data={result?.data || result}
-            darkMode={darkMode}
+            tool={tool}
+            data={result?.data}
+            status={result?.status as any}
             onExport={handleExport}
           />
         ))}

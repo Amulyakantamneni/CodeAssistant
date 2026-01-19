@@ -2,19 +2,25 @@
 
 A comprehensive AI-powered code analysis tool with debugging, refactoring, optimization, testing, and PR generation capabilities.
 
+Built with **Next.js** (Frontend) + **FastAPI** (Backend) + **Redis/Celery** (Worker Queue) + **Docker**.
+
 ![Code Assistant](https://img.shields.io/badge/Code-Assistant-purple)
-![React](https://img.shields.io/badge/React-18-blue)
-![Node.js](https://img.shields.io/badge/Node.js-18+-green)
+![Next.js](https://img.shields.io/badge/Next.js-14-black)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.109-green)
+![Redis](https://img.shields.io/badge/Redis-7-red)
+![Celery](https://img.shields.io/badge/Celery-5.3-green)
 
 ## Features
 
 ### Tools
 
-- **Debugger** - Identifies syntax and logic errors with line numbers and suggested fixes
-- **Refactorizer** - Applies clean code principles (SOLID, DRY, KISS) to improve code quality
-- **Optimizer** - Suggests performance improvements with Big O analysis
-- **Tester** - Generates comprehensive test cases and test code
-- **PR Generator** - Creates professional pull request descriptions
+| Tool | Description |
+|------|-------------|
+| **Debugger** | Identifies syntax and logic errors with line numbers and suggested fixes |
+| **Refactorizer** | Applies clean code principles (SOLID, DRY, KISS) to improve code quality |
+| **Optimizer** | Suggests performance improvements with Big O analysis |
+| **Tester** | Generates comprehensive test cases and test code |
+| **PR Generator** | Creates professional pull request descriptions |
 
 ### Additional Features
 
@@ -23,103 +29,164 @@ A comprehensive AI-powered code analysis tool with debugging, refactoring, optim
 - **Export to GitHub** - Push code changes directly to repositories
 - **Create PRs** - Generate and create pull requests
 - **Multi-tool Analysis** - Run multiple tools simultaneously
+- **Background Jobs** - Long-running tasks processed by Celery workers
+- **Real-time Updates** - Job status polling with live updates
 - **File Upload** - Upload local files for analysis
 - **Results Dashboard** - View all analysis results in one place
 - **Export Results** - Download analysis results as JSON
+
+## Architecture
+
+```
+┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
+│                 │     │                 │     │                 │
+│   Next.js       │────▶│   FastAPI       │────▶│   Redis         │
+│   Frontend      │     │   Backend       │     │   Broker        │
+│   (Port 3000)   │     │   (Port 8000)   │     │   (Port 6379)   │
+│                 │     │                 │     │                 │
+└─────────────────┘     └─────────────────┘     └────────┬────────┘
+                                                         │
+                                                         ▼
+                                                ┌─────────────────┐
+                                                │                 │
+                                                │   Celery        │
+                                                │   Workers       │
+                                                │                 │
+                                                └─────────────────┘
+```
 
 ## Project Structure
 
 ```
 code-assistant/
 ├── backend/
-│   ├── server.js          # Express API server
-│   ├── package.json       # Backend dependencies
-│   └── .env.example       # Environment variables template
+│   ├── main.py            # FastAPI application
+│   ├── celery_app.py      # Celery configuration
+│   ├── tasks.py           # Celery background tasks
+│   ├── ai_service.py      # OpenAI integration
+│   ├── config.py          # Configuration settings
+│   ├── requirements.txt   # Python dependencies
+│   └── Dockerfile
 ├── frontend/
-│   ├── src/
-│   │   ├── components/    # React components
-│   │   ├── hooks/         # Custom React hooks
-│   │   ├── utils/         # API utilities
-│   │   ├── App.jsx        # Main application
-│   │   ├── main.jsx       # Entry point
-│   │   └── index.css      # Global styles
-│   ├── public/            # Static assets
-│   ├── index.html         # HTML template
-│   ├── vite.config.js     # Vite configuration
-│   ├── tailwind.config.js # Tailwind configuration
-│   └── package.json       # Frontend dependencies
+│   ├── app/
+│   │   ├── layout.tsx     # Root layout
+│   │   ├── page.tsx       # Main page
+│   │   └── globals.css    # Global styles
+│   ├── components/
+│   │   ├── Header.tsx
+│   │   ├── CodeInput.tsx
+│   │   ├── ToolSelector.tsx
+│   │   ├── ResultsDashboard.tsx
+│   │   ├── GitHubExport.tsx
+│   │   └── ThemeProvider.tsx
+│   ├── lib/
+│   │   ├── api.ts         # API client
+│   │   └── utils.ts       # Utility functions
+│   ├── package.json
+│   └── Dockerfile
+├── docker-compose.yml
+├── .env.example
 └── README.md
 ```
 
 ## Getting Started
 
-### Prerequisites
+### Option 1: Docker (Recommended)
 
-- Node.js 18+
-- npm or yarn
-- OpenAI API key
-- GitHub Personal Access Token (for GitHub features)
-
-### Installation
-
-1. **Clone and navigate to the project:**
+1. **Clone the repository:**
    ```bash
-   cd code-assistant
+   git clone https://github.com/Amulyakantamneni/CodeAssistant.git
+   cd CodeAssistant
    ```
 
-2. **Set up the backend:**
+2. **Set up environment variables:**
    ```bash
-   cd backend
-   npm install
    cp .env.example .env
-   # Edit .env and add your API keys
+   # Edit .env and add your OPENAI_API_KEY
    ```
 
-3. **Set up the frontend:**
+3. **Start all services:**
    ```bash
-   cd ../frontend
-   npm install
+   docker-compose up --build
    ```
 
-### Configuration
+4. **Access the application:**
+   - Frontend: http://localhost:3000
+   - Backend API: http://localhost:8000
+   - API Docs: http://localhost:8000/docs
+   - Flower (Task Monitor): http://localhost:5555
 
-Create a `.env` file in the backend directory:
+### Option 2: Manual Setup
 
-```env
-PORT=5000
-OPENAI_API_KEY=your_openai_api_key_here
-GITHUB_TOKEN=your_github_token_here
+#### Prerequisites
+- Python 3.11+
+- Node.js 20+
+- Redis
+
+#### Backend
+
+```bash
+cd backend
+
+# Create virtual environment
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Set environment variables
+export OPENAI_API_KEY=your_key_here
+export REDIS_URL=redis://localhost:6379/0
+
+# Start Redis (required)
+redis-server
+
+# Start Celery worker (in a new terminal)
+celery -A celery_app worker --loglevel=info
+
+# Start FastAPI server
+uvicorn main:app --reload --port 8000
 ```
 
-### Running the Application
+#### Frontend
 
-1. **Start the backend server:**
-   ```bash
-   cd backend
-   npm run dev
-   ```
+```bash
+cd frontend
 
-2. **Start the frontend (in a new terminal):**
-   ```bash
-   cd frontend
-   npm run dev
-   ```
+# Install dependencies
+npm install
 
-3. **Open your browser:**
-   Navigate to `http://localhost:3000`
+# Set environment variables (optional)
+export NEXT_PUBLIC_API_URL=http://localhost:8000
+
+# Start development server
+npm run dev
+```
 
 ## API Endpoints
 
-### Analysis Tools
+### Async Job Endpoints (Recommended)
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
-| `/api/debug` | POST | Debug code for errors |
-| `/api/refactor` | POST | Refactor code with clean code principles |
-| `/api/optimize` | POST | Optimize code for performance |
-| `/api/test` | POST | Generate test cases |
-| `/api/generate-pr` | POST | Generate PR description |
-| `/api/analyze-all` | POST | Run multiple tools simultaneously |
+| `/api/jobs/debug` | POST | Create debug job |
+| `/api/jobs/refactor` | POST | Create refactor job |
+| `/api/jobs/optimize` | POST | Create optimize job |
+| `/api/jobs/test` | POST | Create test generation job |
+| `/api/jobs/pr` | POST | Create PR generation job |
+| `/api/jobs/analyze-all` | POST | Run multiple tools |
+| `/api/jobs/{job_id}` | GET | Get job status/result |
+
+### Sync Endpoints (Quick Operations)
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/debug` | POST | Synchronous debug |
+| `/api/refactor` | POST | Synchronous refactor |
+| `/api/optimize` | POST | Synchronous optimize |
+| `/api/test` | POST | Synchronous test generation |
+| `/api/generate-pr` | POST | Synchronous PR generation |
 
 ### GitHub Integration
 
@@ -128,53 +195,50 @@ GITHUB_TOKEN=your_github_token_here
 | `/api/github/export` | POST | Export code to GitHub |
 | `/api/github/create-pr` | POST | Create a pull request |
 
-### Request Format
-
-```json
-{
-  "code": "your code here",
-  "language": "JavaScript",
-  "githubUrl": "optional GitHub file URL"
-}
-```
-
-## Usage
-
-1. **Enter your code** - Paste code directly or provide a GitHub URL
-2. **Select language** - Choose the programming language (or auto-detect)
-3. **Choose tools** - Select one or more analysis tools
-4. **Run analysis** - Click the run button to execute selected tools
-5. **Review results** - View detailed results in the dashboard
-6. **Export** - Export to GitHub or download results
-
 ## Tech Stack
 
 ### Backend
-- Express.js - Web framework
-- OpenAI API - AI-powered analysis
-- Octokit - GitHub API integration
-- Axios - HTTP client
+- **FastAPI** - Modern Python web framework
+- **Celery** - Distributed task queue
+- **Redis** - Message broker & result backend
+- **OpenAI API** - AI-powered analysis
+- **PyGithub** - GitHub API integration
 
 ### Frontend
-- React 18 - UI framework
-- Vite - Build tool
-- Tailwind CSS - Styling
-- Framer Motion - Animations
-- React Syntax Highlighter - Code display
-- Lucide React - Icons
+- **Next.js 14** - React framework with App Router
+- **TypeScript** - Type safety
+- **Tailwind CSS** - Utility-first styling
+- **Framer Motion** - Animations
+- **React Syntax Highlighter** - Code display
+- **Lucide React** - Icons
 
-## Screenshots
+### Infrastructure
+- **Docker** - Containerization
+- **Docker Compose** - Multi-container orchestration
 
-The application features a modern UI with:
-- Clean, responsive design
-- Dark and light mode support
-- Intuitive tool selection
-- Expandable result cards
-- Code syntax highlighting
+## Deployment
+
+### Recommended Platforms
+
+| Service | Platform | Notes |
+|---------|----------|-------|
+| Frontend | **Vercel** | Native Next.js support |
+| Backend | **Railway** / **Render** | Python + Redis support |
+| Redis | **Upstash** / **Redis Cloud** | Managed Redis |
+| Workers | **Railway** / **Render** | Background workers |
+
+## Environment Variables
+
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `OPENAI_API_KEY` | OpenAI API key | Yes |
+| `GITHUB_TOKEN` | GitHub Personal Access Token | No |
+| `REDIS_URL` | Redis connection URL | Yes |
+| `NEXT_PUBLIC_API_URL` | Backend API URL | No |
 
 ## License
 
-MIT License - feel free to use this project for your own purposes.
+MIT License
 
 ## Contributing
 
