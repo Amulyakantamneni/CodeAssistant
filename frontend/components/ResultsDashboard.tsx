@@ -342,9 +342,10 @@ function ResultCard({ tool, data, status, onExport }: ResultCardProps) {
     }
 
     if (status === 'failed') {
+      const errorMessage = data?.error;
       return (
         <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-lg text-red-600 dark:text-red-400">
-          Analysis failed. Please try again.
+          {errorMessage ? `Analysis failed: ${errorMessage}` : 'Analysis failed. Please try again.'}
         </div>
       );
     }
