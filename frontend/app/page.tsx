@@ -104,10 +104,12 @@ export default function Home() {
             },
           }));
         } catch (error: any) {
+          const errorDetail =
+            error?.response?.data?.detail || error?.response?.data?.error || error?.message;
           console.error(`Error running ${tool}:`, error);
           setResults((prev: Record<string, { status: string; data?: any }>) => ({
             ...prev,
-            [tool]: { status: 'failed', data: { error: error.message } },
+            [tool]: { status: 'failed', data: { error: errorDetail || 'Unknown error' } },
           }));
         }
       });
