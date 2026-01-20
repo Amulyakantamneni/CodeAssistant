@@ -1,6 +1,9 @@
 import axios from 'axios';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || '/api';
+const RAW_API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const API_BASE = RAW_API_BASE.replace(/\/$/, '').endsWith('/api')
+  ? RAW_API_BASE.replace(/\/$/, '')
+  : `${RAW_API_BASE.replace(/\/$/, '')}/api`;
 
 export interface CodeRequest {
   code: string;
