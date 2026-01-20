@@ -8,7 +8,7 @@ async def analyze_with_ai(system_prompt: str, user_prompt: str) -> dict:
     """Call OpenAI API for code analysis."""
     try:
         response = client.chat.completions.create(
-            model="gpt-4-turbo-preview",
+            model="gpt-4o",
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt}
@@ -31,7 +31,7 @@ def analyze_with_ai_sync(system_prompt: str, user_prompt: str) -> dict:
     """Synchronous version for Celery tasks."""
     try:
         response = client.chat.completions.create(
-            model="gpt-4-turbo-preview",
+            model="gpt-4o",
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt}
