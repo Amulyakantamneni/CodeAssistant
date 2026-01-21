@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import toast from 'react-hot-toast';
+import { motion } from 'framer-motion';
 import { Header } from '@/components/Header';
 import { CodeInput } from '@/components/CodeInput';
 import { ToolSelector } from '@/components/ToolSelector';
@@ -11,6 +12,30 @@ import { OutputConsole, type ConsoleLog } from '@/components/OutputConsole';
 import { ChatAssistant } from '@/components/ChatAssistant';
 import { api } from '@/lib/api';
 import { cn } from '@/lib/utils';
+
+// Animation variants for staggered children
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+      delayChildren: 0.1,
+    },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.5,
+      ease: [0.16, 1, 0.3, 1],
+    },
+  },
+};
 
 export default function Home() {
   // Input state
@@ -175,9 +200,14 @@ export default function Home() {
       <div className="relative z-10">
         <Header />
 
-        <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <motion.main
+          className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8"
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+        >
           {/* Hero Section */}
-          <div className="text-center mb-10">
+          <motion.div className="text-center mb-10" variants={itemVariants}>
             <h1 className="text-5xl sm:text-6xl font-bold mb-4">
               <span className="title-gradient">Code Assistant</span>
             </h1>
@@ -186,20 +216,20 @@ export default function Home() {
               <br />
               Run multiple analyses simultaneously and export to GitHub.
             </p>
-          </div>
+          </motion.div>
 
           <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_320px] gap-6">
             <div>
               {/* Tool Selector - Horizontal Pills */}
-              <div className="mb-8">
+              <motion.div className="mb-8" variants={itemVariants}>
                 <ToolSelector
                   selectedTools={selectedTools}
                   setSelectedTools={setSelectedTools}
                 />
-              </div>
+              </motion.div>
 
               {/* Code Input */}
-              <div className="mb-6">
+              <motion.div className="mb-6" variants={itemVariants}>
                 <CodeInput
                   code={code}
                   setCode={setCode}
@@ -208,19 +238,29 @@ export default function Home() {
                   language={language}
                   setLanguage={setLanguage}
                 />
-              </div>
+              </motion.div>
 
               {/* Run Analysis Button */}
-              <div className="mb-6">
-                <button
+              <motion.div className="mb-6" variants={itemVariants}>
+                <motion.button
                   onClick={runTools}
                   disabled={isLoading || selectedTools.length === 0 || !hasInput}
                   className={cn(
-                    'w-full py-4 rounded-xl font-semibold text-white text-lg transition-all flex items-center justify-center gap-2',
+                    'w-full py-4 rounded-xl font-semibold text-white text-lg flex items-center justify-center gap-2',
                     isLoading || selectedTools.length === 0 || !hasInput
                       ? 'bg-gray-400 dark:bg-dark-600 cursor-not-allowed'
-                      : 'bg-blue-500 hover:bg-blue-600 shadow-lg hover:shadow-xl'
+                      : 'btn-3d'
                   )}
+                  whileHover={
+                    !isLoading && selectedTools.length > 0 && hasInput
+                      ? { scale: 1.02, y: -2 }
+                      : {}
+                  }
+                  whileTap={
+                    !isLoading && selectedTools.length > 0 && hasInput
+                      ? { scale: 0.98 }
+                      : {}
+                  }
                 >
                   {isLoading ? (
                     <>
@@ -230,7 +270,7 @@ export default function Home() {
                   ) : (
                     'Run Analysis'
                   )}
-                </button>
+                </motion.button>
                 {!hasInput && selectedTools.length > 0 && (
                   <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-2">
                     Please enter code or a GitHub URL first
@@ -241,36 +281,49 @@ export default function Home() {
                     Please select at least one tool
                   </p>
                 )}
-              </div>
+              </motion.div>
 
-              <div className="mb-8">
+              <motion.div className="mb-8" variants={itemVariants}>
                 <OutputConsole logs={consoleLogs} onClear={clearLogs} />
-              </div>
+              </motion.div>
 
               {/* Results Dashboard */}
               {Object.keys(results).length > 0 && (
-                <div className="mb-8">
+                <motion.div
+                  className="mb-8"
+                  initial={{ opacity: 0, y: 30, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+                >
                   <ResultsDashboard results={results} onClear={clearResults} />
-                </div>
+                </motion.div>
               )}
 
               {/* GitHub Export - Show after results */}
               {Object.keys(results).length > 0 && (
-                <div className="mb-8">
+                <motion.div
+                  className="mb-8"
+                  initial={{ opacity: 0, y: 30, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  transition={{ duration: 0.5, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
+                >
                   <GitHubExport
                     code={getBestModifiedCode() || code}
                     results={results}
                     onSuccess={handleExportSuccess}
                   />
-                </div>
+                </motion.div>
               )}
             </div>
 
-            <aside className="space-y-6 xl:sticky xl:top-6 h-fit">
+            <motion.aside
+              className="space-y-6 xl:sticky xl:top-6 h-fit"
+              variants={itemVariants}
+            >
               <ChatAssistant code={code} language={language} />
-            </aside>
+            </motion.aside>
           </div>
-        </main>
+        </motion.main>
 
         {/* Footer */}
         <footer className="border-t border-gray-200/50 dark:border-dark-700/50 mt-8">
