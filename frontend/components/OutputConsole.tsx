@@ -25,7 +25,7 @@ interface OutputConsoleProps {
 
 export function OutputConsole({ logs, onClear }: OutputConsoleProps) {
   return (
-    <div className="bg-white/80 dark:bg-dark-800/80 backdrop-blur-lg border border-gray-200/60 dark:border-dark-700/60 rounded-2xl p-5 shadow-lg">
+    <div className="card-3d rounded-2xl p-5">
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-lg font-semibold">Output Console</h3>
         <button
