@@ -1,8 +1,44 @@
 import json
+import re
 from openai import OpenAI
 from config import settings
 
 client = OpenAI(api_key=settings.OPENAI_API_KEY)
+
+def _parse_ai_json(content: str) -> dict:
+    """Parse JSON from model output, including fenced or prefixed responses."""
+    cleaned = content.strip()
+    candidates = [cleaned]
+
+    fenced = re.search(r"```(?:json)?\s*(.*?)\s*```", cleaned, re.DOTALL | re.IGNORECASE)
+    if fenced:
+        candidates.insert(0, fenced.group(1).strip())
+
+    first_curly = cleaned.find("{")
+    last_curly = cleaned.rfind("}")
+    if first_curly != -1 and last_curly != -1 and last_curly > first_curly:
+        candidates.append(cleaned[first_curly : last_curly + 1])
+
+    first_bracket = cleaned.find("[")
+    last_bracket = cleaned.rfind("]")
+    if first_bracket != -1 and last_bracket != -1 and last_bracket > first_bracket:
+        candidates.append(cleaned[first_bracket : last_bracket + 1])
+
+    for candidate in candidates:
+        try:
+            parsed = json.loads(candidate)
+            if isinstance(parsed, str):
+                nested = parsed.strip()
+                if (nested.startswith("{") and nested.endswith("}")) or (
+                    nested.startswith("[") and nested.endswith("]")
+                ):
+                    return json.loads(nested)
+            return parsed
+        except json.JSONDecodeError:
+            continue
+
+    return {"raw": content}
+
 
 async def analyze_with_ai(system_prompt: str, user_prompt: str) -> dict:
     """Call OpenAI API for code analysis."""
@@ -18,11 +54,7 @@ async def analyze_with_ai(system_prompt: str, user_prompt: str) -> dict:
         )
         content = response.choices[0].message.content
 
-        # Try to parse as JSON
-        try:
-            return json.loads(content)
-        except json.JSONDecodeError:
-            return {"raw": content}
+        return _parse_ai_json(content)
     except Exception as e:
         raise Exception(f"AI Analysis failed: {str(e)}")
 
@@ -41,10 +73,7 @@ def analyze_with_ai_sync(system_prompt: str, user_prompt: str) -> dict:
         )
         content = response.choices[0].message.content
 
-        try:
-            return json.loads(content)
-        except json.JSONDecodeError:
-            return {"raw": content}
+        return _parse_ai_json(content)
     except Exception as e:
         raise Exception(f"AI Analysis failed: {str(e)}")
 
@@ -59,7 +88,7 @@ PROMPTS = {
 5. Null/undefined reference issues
 6. Type mismatches
 
-Format your response as JSON with the following structure:
+Format your response as JSON with the following structure. Return JSON only; no code fences or extra text.
 {
   "syntaxErrors": [{ "line": number, "error": "description", "suggestion": "fix" }],
   "logicErrors": [{ "line": number, "error": "description", "suggestion": "fix" }],
@@ -79,7 +108,7 @@ Provide:
 3. Explanation of each principle applied
 4. Before/after comparison for key changes
 
-Format your response as JSON:
+Format your response as JSON. Return JSON only; no code fences or extra text.
 {
   "refactoredCode": "the improved code",
   "changes": [{ "type": "principle applied", "description": "what was changed", "before": "old code snippet", "after": "new code snippet" }],
@@ -99,7 +128,7 @@ Provide:
 4. Benchmarking suggestions
 5. Trade-offs of optimizations
 
-Format your response as JSON:
+Format your response as JSON. Return JSON only; no code fences or extra text.
 {
   "optimizedCode": "the optimized code",
   "performanceAnalysis": {
@@ -123,7 +152,7 @@ Provide:
 5. Mock suggestions for dependencies
 6. Code coverage analysis
 
-Format your response as JSON:
+Format your response as JSON. Return JSON only; no code fences or extra text.
 {
   "testCode": "complete test file code",
   "testCases": [{ "name": "test name", "description": "what it tests", "type": "unit|integration|edge", "code": "test code" }],
@@ -144,7 +173,7 @@ Provide:
 5. Checklist items
 6. Related issues/tickets format
 
-Format your response as JSON:
+Format your response as JSON. Return JSON only; no code fences or extra text.
 {
   "title": "PR title",
   "summary": "brief summary",
