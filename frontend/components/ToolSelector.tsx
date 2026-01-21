@@ -64,7 +64,7 @@ export function ToolSelector({
 
   return (
     <div className="flex flex-wrap justify-center gap-3">
-      {TOOLS.map((tool) => {
+      {TOOLS.map((tool, index) => {
         const isSelected = selectedTools.includes(tool.id);
         const Icon = tool.icon;
 
@@ -72,18 +72,31 @@ export function ToolSelector({
           <motion.button
             key={tool.id}
             onClick={() => toggleTool(tool.id)}
-            whileHover={{ scale: 1.03 }}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{
+              duration: 0.4,
+              delay: index * 0.05,
+              ease: [0.16, 1, 0.3, 1],
+            }}
+            whileHover={{
+              scale: 1.05,
+              y: -2,
+              transition: { duration: 0.2 },
+            }}
             whileTap={{ scale: 0.97 }}
             className={cn(
-              'flex items-center gap-2.5 px-4 py-2.5 rounded-full border-2 transition-all font-medium',
-              isSelected
-                ? `${tool.selectedBg} ${tool.selectedBorder} shadow-md`
-                : 'bg-white/80 dark:bg-dark-800/80 border-gray-200 dark:border-dark-600 hover:border-gray-300 dark:hover:border-dark-500 hover:shadow-sm'
+              'pill-3d flex items-center gap-2.5 px-4 py-2.5 rounded-full transition-all font-medium',
+              isSelected && 'active glow'
             )}
           >
-            <div className={cn('p-1.5 rounded-lg', tool.bgColor)}>
+            <motion.div
+              className={cn('p-1.5 rounded-lg', tool.bgColor)}
+              animate={isSelected ? { scale: [1, 1.1, 1] } : {}}
+              transition={{ duration: 0.3 }}
+            >
               <Icon className="w-4 h-4 text-white" />
-            </div>
+            </motion.div>
             <span className="text-gray-800 dark:text-gray-200">{tool.name}</span>
           </motion.button>
         );
