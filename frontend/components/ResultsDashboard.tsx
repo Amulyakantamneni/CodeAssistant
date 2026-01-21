@@ -666,9 +666,12 @@ function ResultCard({ tool, data, status, onExport }: ResultCardProps) {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="bg-white dark:bg-dark-800 rounded-2xl shadow-lg border border-gray-200 dark:border-dark-700 overflow-hidden"
+      initial={{ opacity: 0, y: 30, scale: 0.95 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, y: -20, scale: 0.95 }}
+      transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+      whileHover={{ y: -2 }}
+      className="card-3d rounded-2xl overflow-hidden"
     >
       <button
         onClick={() => setExpanded(!expanded)}
@@ -736,29 +739,64 @@ export function ResultsDashboard({ results, onClear }: ResultsDashboardProps) {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
+    <motion.div
+      className="space-y-4"
+      initial="hidden"
+      animate="visible"
+      variants={{
+        hidden: { opacity: 0 },
+        visible: {
+          opacity: 1,
+          transition: { staggerChildren: 0.1 },
+        },
+      }}
+    >
+      <motion.div
+        className="flex items-center justify-between"
+        variants={{
+          hidden: { opacity: 0, y: 20 },
+          visible: { opacity: 1, y: 0 },
+        }}
+      >
         <h2 className="text-2xl font-bold">Results Dashboard</h2>
-        <button
+        <motion.button
           onClick={onClear}
           className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-dark-700 rounded-lg transition-colors"
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
         >
           <X className="w-4 h-4" />
           Clear Results
-        </button>
-      </div>
+        </motion.button>
+      </motion.div>
 
       <div className="space-y-4">
-        {Object.entries(results).map(([tool, result]) => (
-          <ResultCard
+        {Object.entries(results).map(([tool, result], index) => (
+          <motion.div
             key={tool}
-            tool={tool}
-            data={result?.data}
-            status={result?.status as any}
-            onExport={handleExport}
-          />
+            variants={{
+              hidden: { opacity: 0, y: 30, scale: 0.95 },
+              visible: {
+                opacity: 1,
+                y: 0,
+                scale: 1,
+                transition: {
+                  duration: 0.4,
+                  delay: index * 0.1,
+                  ease: [0.16, 1, 0.3, 1],
+                },
+              },
+            }}
+          >
+            <ResultCard
+              tool={tool}
+              data={result?.data}
+              status={result?.status as any}
+              onExport={handleExport}
+            />
+          </motion.div>
         ))}
       </div>
-    </div>
+    </motion.div>
   );
 }
