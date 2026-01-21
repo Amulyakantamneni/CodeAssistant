@@ -419,15 +419,109 @@ function ResultCard({ tool, data, status, onExport }: ResultCardProps) {
                       ? 'bg-blue-100 text-blue-600'
                       : test.type === 'edge'
                       ? 'bg-orange-100 text-orange-600'
-                      : 'bg-green-100 text-green-600'
+                      : test.type === 'integration'
+                      ? 'bg-green-100 text-green-600'
+                      : 'bg-purple-100 text-purple-600'
                   )}
                 >
                   {test.type}
                 </span>
               </div>
-              <p className="text-xs text-gray-500 dark:text-gray-400">{test.description}</p>
+              {test.inputs && (
+                <p className="text-xs text-gray-500 dark:text-gray-400">Inputs: {test.inputs}</p>
+              )}
+              {test.expected && (
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Expected: {test.expected}
+                </p>
+              )}
             </div>
           ))}
+        </div>
+      )}
+
+      {data.coverageAnalysis && (
+        <div>
+          <h4 className="font-semibold mb-2">Coverage Analysis</h4>
+          {data.coverageAnalysis.untested?.length > 0 && (
+            <div className="mb-2">
+              <p className="text-xs text-gray-500 mb-1">Untested</p>
+              <ul className="list-disc pl-5 text-sm text-gray-600 dark:text-gray-300 space-y-1">
+                {data.coverageAnalysis.untested.map((item: string, i: number) => (
+                  <li key={i}>{item}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {data.coverageAnalysis.recommendations?.length > 0 && (
+            <div>
+              <p className="text-xs text-gray-500 mb-1">Recommendations</p>
+              <ul className="list-disc pl-5 text-sm text-gray-600 dark:text-gray-300 space-y-1">
+                {data.coverageAnalysis.recommendations.map((item: string, i: number) => (
+                  <li key={i}>{item}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      )}
+
+      {data.executionPlan && (
+        <div>
+          <h4 className="font-semibold mb-2">Execution Plan</h4>
+          {data.executionPlan.frameworks?.length > 0 && (
+            <p className="text-sm text-gray-600 dark:text-gray-300">
+              Frameworks: {data.executionPlan.frameworks.join(', ')}
+            </p>
+          )}
+          {data.executionPlan.commands?.length > 0 && (
+            <div className="mt-2 space-y-1">
+              {data.executionPlan.commands.map((cmd: string, i: number) => (
+                <pre key={i} className="text-xs bg-gray-100 dark:bg-dark-700 rounded p-2">
+                  {cmd}
+                </pre>
+              ))}
+            </div>
+          )}
+          {data.executionPlan.notes?.length > 0 && (
+            <ul className="list-disc pl-5 text-sm text-gray-600 dark:text-gray-300 space-y-1 mt-2">
+              {data.executionPlan.notes.map((item: string, i: number) => (
+                <li key={i}>{item}</li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+
+      {data.bugDetection?.length > 0 && (
+        <div>
+          <h4 className="font-semibold mb-2">Bug Detection</h4>
+          <div className="space-y-2">
+            {data.bugDetection.map((item: any, i: number) => (
+              <div key={i} className="p-3 bg-red-50 dark:bg-red-900/20 rounded-lg text-sm">
+                <p className="font-medium">{item.test}</p>
+                {item.likelyCause && (
+                  <p className="text-gray-600 dark:text-gray-300">
+                    Cause: {item.likelyCause}
+                  </p>
+                )}
+                {item.location && (
+                  <p className="text-gray-500 dark:text-gray-400">Location: {item.location}</p>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {data.testingSuggestions?.length > 0 && (
+        <div>
+          <h4 className="font-semibold mb-2">Testing Suggestions</h4>
+          <ul className="list-disc pl-5 text-sm text-gray-600 dark:text-gray-300 space-y-1">
+            {data.testingSuggestions.map((item: string, i: number) => (
+              <li key={i}>{item}</li>
+            ))}
+          </ul>
         </div>
       )}
 
