@@ -8,6 +8,7 @@ import { ToolSelector } from '@/components/ToolSelector';
 import { ResultsDashboard } from '@/components/ResultsDashboard';
 import { GitHubExport } from '@/components/GitHubExport';
 import { api } from '@/lib/api';
+import { cn } from '@/lib/utils';
 
 export default function Home() {
   // Input state
@@ -145,24 +146,33 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-dark-950">
-      <Header />
+    <div className="cosmic-bg">
+      <div className="relative z-10">
+        <Header />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Hero Section */}
-        <div className="text-center mb-12">
-          <h1 className="text-4xl sm:text-5xl font-bold mb-4">
-            <span className="gradient-text">Code Assistant</span>
-          </h1>
-          <p className="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-            Debug, refactor, optimize, and test your code with AI-powered tools. Run multiple
-            analyses simultaneously and export to GitHub.
-          </p>
-        </div>
+        <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {/* Hero Section */}
+          <div className="text-center mb-10">
+            <h1 className="text-5xl sm:text-6xl font-bold mb-4">
+              <span className="title-gradient">Code Assistant</span>
+            </h1>
+            <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+              Debug, refactor, optimize, and test your code with AI-powered tools.
+              <br />
+              Run multiple analyses simultaneously and export to GitHub.
+            </p>
+          </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Left Column - Input */}
-          <div className="lg:col-span-2 space-y-6">
+          {/* Tool Selector - Horizontal Pills */}
+          <div className="mb-8">
+            <ToolSelector
+              selectedTools={selectedTools}
+              setSelectedTools={setSelectedTools}
+            />
+          </div>
+
+          {/* Code Input */}
+          <div className="mb-6">
             <CodeInput
               code={code}
               setCode={setCode}
@@ -171,73 +181,69 @@ export default function Home() {
               language={language}
               setLanguage={setLanguage}
             />
+          </div>
 
-            {/* Results Dashboard */}
-            {Object.keys(results).length > 0 && (
-              <ResultsDashboard results={results} onClear={clearResults} />
+          {/* Run Analysis Button */}
+          <div className="mb-8">
+            <button
+              onClick={runTools}
+              disabled={isLoading || selectedTools.length === 0 || !hasInput}
+              className={cn(
+                'w-full py-4 rounded-xl font-semibold text-white text-lg transition-all flex items-center justify-center gap-2',
+                isLoading || selectedTools.length === 0 || !hasInput
+                  ? 'bg-gray-400 dark:bg-dark-600 cursor-not-allowed'
+                  : 'bg-blue-500 hover:bg-blue-600 shadow-lg hover:shadow-xl'
+              )}
+            >
+              {isLoading ? (
+                <>
+                  <div className="spinner" />
+                  Analyzing...
+                </>
+              ) : (
+                'Run Analysis'
+              )}
+            </button>
+            {!hasInput && selectedTools.length > 0 && (
+              <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-2">
+                Please enter code or a GitHub URL first
+              </p>
+            )}
+            {hasInput && selectedTools.length === 0 && (
+              <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-2">
+                Please select at least one tool
+              </p>
             )}
           </div>
 
-          {/* Right Column - Tools & Export */}
-          <div className="space-y-6">
-            <ToolSelector
-              selectedTools={selectedTools}
-              setSelectedTools={setSelectedTools}
-              onRunTools={runTools}
-              isLoading={isLoading}
-              hasInput={hasInput}
-            />
+          {/* Results Dashboard */}
+          {Object.keys(results).length > 0 && (
+            <div className="mb-8">
+              <ResultsDashboard results={results} onClear={clearResults} />
+            </div>
+          )}
 
-            {/* GitHub Export */}
-            {(code || Object.keys(results).length > 0) && (
+          {/* GitHub Export - Show after results */}
+          {Object.keys(results).length > 0 && (
+            <div className="mb-8">
               <GitHubExport
                 code={getBestModifiedCode() || code}
                 results={results}
                 onSuccess={handleExportSuccess}
               />
-            )}
-
-            {/* Quick Tips */}
-            <div className="bg-gradient-to-br from-primary-500/10 to-purple-500/10 dark:from-primary-900/20 dark:to-purple-900/20 rounded-2xl p-6 border border-primary-200 dark:border-primary-800">
-              <h3 className="font-semibold text-primary-700 dark:text-primary-400 mb-3">
-                Quick Tips
-              </h3>
-              <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
-                <li className="flex items-start gap-2">
-                  <span className="text-primary-500">•</span>
-                  Select multiple tools to run simultaneous analyses
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-primary-500">•</span>
-                  Use GitHub URLs to analyze remote files directly
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-primary-500">•</span>
-                  Export optimized code back to GitHub with one click
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-primary-500">•</span>
-                  Jobs run in background workers for faster processing
-                </li>
-              </ul>
             </div>
-          </div>
-        </div>
-      </main>
+          )}
+        </main>
 
-      {/* Footer */}
-      <footer className="border-t border-gray-200 dark:border-dark-700 mt-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <p className="text-sm text-gray-500 dark:text-gray-400">
+        {/* Footer */}
+        <footer className="border-t border-gray-200/50 dark:border-dark-700/50 mt-8">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <p className="text-center text-sm text-gray-500 dark:text-gray-400">
               Code Assistant - AI-Powered Development Tools
             </p>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              Built with Next.js + FastAPI + Redis/Celery
-            </p>
           </div>
-        </div>
-      </footer>
+        </footer>
+      </div>
     </div>
   );
 }
