@@ -7,6 +7,8 @@ import { CodeInput } from '@/components/CodeInput';
 import { ToolSelector } from '@/components/ToolSelector';
 import { ResultsDashboard } from '@/components/ResultsDashboard';
 import { GitHubExport } from '@/components/GitHubExport';
+import { OutputConsole, type ConsoleLog } from '@/components/OutputConsole';
+import { ChatAssistant } from '@/components/ChatAssistant';
 import { api } from '@/lib/api';
 import { cn } from '@/lib/utils';
 
@@ -25,17 +27,33 @@ export default function Home() {
 
   // Modified code from results
   const [modifiedCode, setModifiedCode] = useState('');
+  const [consoleLogs, setConsoleLogs] = useState<ConsoleLog[]>([]);
 
   const hasInput = code.trim().length > 0 || githubUrl.trim().length > 0;
+
+  const addLog = useCallback((level: ConsoleLog['level'], message: string) => {
+    const timestamp = new Date().toLocaleTimeString();
+    const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    setConsoleLogs((prev) => [...prev, { id, time: timestamp, level, message }]);
+  }, []);
+
+  const clearLogs = () => {
+    setConsoleLogs([]);
+  };
 
   const runTools = useCallback(async () => {
     if (!hasInput || selectedTools.length === 0) {
       toast.error('Please enter code and select at least one tool');
+      addLog(
+        'warning',
+        'Please enter code and select at least one tool before running analysis.'
+      );
       return;
     }
 
     setIsLoading(true);
     setResults({});
+    addLog('info', `Running ${selectedTools.length} tool(s)...`);
 
     // Initialize results with pending status
     const initialResults: Record<string, { status: string; data?: any }> = {};
@@ -53,6 +71,7 @@ export default function Home() {
             ...prev,
             [tool]: { status: 'running' },
           }));
+          addLog('info', `Starting ${tool}...`);
 
           const requestData = {
             code,
@@ -104,6 +123,7 @@ export default function Home() {
               data: response.data,
             },
           }));
+          addLog('success', `${tool} completed.`);
         } catch (error: any) {
           const errorDetail =
             error?.response?.data?.detail || error?.response?.data?.error || error?.message;
@@ -112,28 +132,33 @@ export default function Home() {
             ...prev,
             [tool]: { status: 'failed', data: { error: errorDetail || 'Unknown error' } },
           }));
+          addLog('error', `${tool} failed: ${errorDetail || 'Unknown error'}`);
         }
       });
 
       await Promise.all(toolPromises);
 
       toast.success('Analysis complete!');
+      addLog('success', 'All analyses complete.');
     } catch (error) {
       console.error('Analysis failed:', error);
       toast.error('Analysis failed. Please try again.');
+      addLog('error', 'Analysis failed. Please try again.');
     } finally {
       setIsLoading(false);
     }
-  }, [code, githubUrl, language, selectedTools, hasInput, modifiedCode]);
+  }, [code, githubUrl, language, selectedTools, hasInput, modifiedCode, addLog]);
 
   const clearResults = () => {
     setResults({});
     setModifiedCode('');
     toast.success('Results cleared');
+    addLog('info', 'Results cleared.');
   };
 
   const handleExportSuccess = () => {
     toast.success('Successfully exported to GitHub!');
+    addLog('success', 'Exported to GitHub.');
   };
 
   // Get the best modified code from results
@@ -150,7 +175,7 @@ export default function Home() {
       <div className="relative z-10">
         <Header />
 
-        <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {/* Hero Section */}
           <div className="text-center mb-10">
             <h1 className="text-5xl sm:text-6xl font-bold mb-4">
@@ -163,76 +188,88 @@ export default function Home() {
             </p>
           </div>
 
-          {/* Tool Selector - Horizontal Pills */}
-          <div className="mb-8">
-            <ToolSelector
-              selectedTools={selectedTools}
-              setSelectedTools={setSelectedTools}
-            />
-          </div>
+          <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_320px] gap-6">
+            <div>
+              {/* Tool Selector - Horizontal Pills */}
+              <div className="mb-8">
+                <ToolSelector
+                  selectedTools={selectedTools}
+                  setSelectedTools={setSelectedTools}
+                />
+              </div>
 
-          {/* Code Input */}
-          <div className="mb-6">
-            <CodeInput
-              code={code}
-              setCode={setCode}
-              githubUrl={githubUrl}
-              setGithubUrl={setGithubUrl}
-              language={language}
-              setLanguage={setLanguage}
-            />
-          </div>
+              {/* Code Input */}
+              <div className="mb-6">
+                <CodeInput
+                  code={code}
+                  setCode={setCode}
+                  githubUrl={githubUrl}
+                  setGithubUrl={setGithubUrl}
+                  language={language}
+                  setLanguage={setLanguage}
+                />
+              </div>
 
-          {/* Run Analysis Button */}
-          <div className="mb-8">
-            <button
-              onClick={runTools}
-              disabled={isLoading || selectedTools.length === 0 || !hasInput}
-              className={cn(
-                'w-full py-4 rounded-xl font-semibold text-white text-lg transition-all flex items-center justify-center gap-2',
-                isLoading || selectedTools.length === 0 || !hasInput
-                  ? 'bg-gray-400 dark:bg-dark-600 cursor-not-allowed'
-                  : 'bg-blue-500 hover:bg-blue-600 shadow-lg hover:shadow-xl'
+              {/* Run Analysis Button */}
+              <div className="mb-6">
+                <button
+                  onClick={runTools}
+                  disabled={isLoading || selectedTools.length === 0 || !hasInput}
+                  className={cn(
+                    'w-full py-4 rounded-xl font-semibold text-white text-lg transition-all flex items-center justify-center gap-2',
+                    isLoading || selectedTools.length === 0 || !hasInput
+                      ? 'bg-gray-400 dark:bg-dark-600 cursor-not-allowed'
+                      : 'bg-blue-500 hover:bg-blue-600 shadow-lg hover:shadow-xl'
+                  )}
+                >
+                  {isLoading ? (
+                    <>
+                      <div className="spinner" />
+                      Analyzing...
+                    </>
+                  ) : (
+                    'Run Analysis'
+                  )}
+                </button>
+                {!hasInput && selectedTools.length > 0 && (
+                  <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-2">
+                    Please enter code or a GitHub URL first
+                  </p>
+                )}
+                {hasInput && selectedTools.length === 0 && (
+                  <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-2">
+                    Please select at least one tool
+                  </p>
+                )}
+              </div>
+
+              <div className="mb-8">
+                <OutputConsole logs={consoleLogs} onClear={clearLogs} />
+              </div>
+
+              {/* Results Dashboard */}
+              {Object.keys(results).length > 0 && (
+                <div className="mb-8">
+                  <ResultsDashboard results={results} onClear={clearResults} />
+                </div>
               )}
-            >
-              {isLoading ? (
-                <>
-                  <div className="spinner" />
-                  Analyzing...
-                </>
-              ) : (
-                'Run Analysis'
+
+              {/* GitHub Export - Show after results */}
+              {Object.keys(results).length > 0 && (
+                <div className="mb-8">
+                  <GitHubExport
+                    code={getBestModifiedCode() || code}
+                    results={results}
+                    onSuccess={handleExportSuccess}
+                  />
+                </div>
               )}
-            </button>
-            {!hasInput && selectedTools.length > 0 && (
-              <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-2">
-                Please enter code or a GitHub URL first
-              </p>
-            )}
-            {hasInput && selectedTools.length === 0 && (
-              <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-2">
-                Please select at least one tool
-              </p>
-            )}
+            </div>
+
+            <aside className="space-y-6 xl:sticky xl:top-6 h-fit">
+              <ChatAssistant code={code} language={language} />
+            </aside>
           </div>
-
-          {/* Results Dashboard */}
-          {Object.keys(results).length > 0 && (
-            <div className="mb-8">
-              <ResultsDashboard results={results} onClear={clearResults} />
-            </div>
-          )}
-
-          {/* GitHub Export - Show after results */}
-          {Object.keys(results).length > 0 && (
-            <div className="mb-8">
-              <GitHubExport
-                code={getBestModifiedCode() || code}
-                results={results}
-                onSuccess={handleExportSuccess}
-              />
-            </div>
-          )}
         </main>
 
         {/* Footer */}
