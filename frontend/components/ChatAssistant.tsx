@@ -63,7 +63,7 @@ export function ChatAssistant({ code, language }: ChatAssistantProps) {
   };
 
   return (
-    <div className="bg-white/80 dark:bg-dark-800/80 backdrop-blur-lg border border-gray-200/60 dark:border-dark-700/60 rounded-2xl p-5 shadow-lg">
+    <div className="card-3d rounded-2xl p-5">
       <div className="flex items-center gap-2 mb-4">
         <div className="w-9 h-9 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center">
           <MessageCircle className="w-5 h-5" />
