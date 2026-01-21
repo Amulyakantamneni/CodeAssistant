@@ -95,7 +95,7 @@ export function GitHubExport({ code, results, onSuccess }: GitHubExportProps) {
   };
 
   return (
-    <div className="bg-white dark:bg-dark-800 rounded-2xl shadow-lg border border-gray-200 dark:border-dark-700 overflow-hidden">
+    <div className="card-3d rounded-2xl overflow-hidden">
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-dark-700/50 transition-colors"
