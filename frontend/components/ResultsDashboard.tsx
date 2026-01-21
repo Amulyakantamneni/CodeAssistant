@@ -117,6 +117,31 @@ function ResultCard({ tool, data, status, onExport }: ResultCardProps) {
 
       {data.summary && <p className="text-gray-600 dark:text-gray-300">{data.summary}</p>}
 
+      {data.issues?.length > 0 && (
+        <div>
+          <h4 className="font-semibold mb-2">Issues ({data.issues.length})</h4>
+          <div className="space-y-2">
+            {data.issues.map((issue: any, i: number) => (
+              <div key={i} className="p-3 bg-gray-100 dark:bg-dark-700 rounded-lg">
+                <p className="text-sm">
+                  <span className="font-medium">
+                    {issue.category ? `${issue.category.toUpperCase()}` : 'Issue'}
+                    {issue.line ? ` • Line ${issue.line}` : ''}
+                    :
+                  </span>{' '}
+                  {issue.issue}
+                </p>
+                {issue.suggestion && (
+                  <p className="text-sm text-green-600 dark:text-green-400 mt-1">
+                    Fix: {issue.suggestion}
+                  </p>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {data.syntaxErrors?.length > 0 && (
         <div>
           <h4 className="font-semibold text-red-500 mb-2">
@@ -188,21 +213,95 @@ function ResultCard({ tool, data, status, onExport }: ResultCardProps) {
         </div>
       )}
 
+      {(() => {
+        const keyChanges =
+          data.keyChanges ??
+          data.improvements ??
+          (Array.isArray(data.changes)
+            ? data.changes
+                .map((change: any) => {
+                  if (!change) return null;
+                  if (change.description && change.type) {
+                    return `${change.type}: ${change.description}`;
+                  }
+                  if (change.description) return change.description;
+                  return null;
+                })
+                .filter(Boolean)
+            : []);
+
+        return keyChanges?.length > 0 ? (
+          <div>
+            <h4 className="font-semibold mb-2">Key Changes</h4>
+            <ul className="list-disc pl-5 text-sm text-gray-600 dark:text-gray-300 space-y-1">
+              {keyChanges.map((item: string, i: number) => (
+                <li key={i}>{item}</li>
+              ))}
+            </ul>
+          </div>
+        ) : null;
+      })()}
+
       {data.principlesApplied?.length > 0 && (
         <div>
           <h4 className="font-semibold mb-2">Principles Applied</h4>
-          <div className="flex flex-wrap gap-2">
+          <div className="space-y-2">
             {data.principlesApplied.map((p: any, i: number) => (
-              <span
+              <div
                 key={i}
-                className="px-3 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-full text-sm"
+                className="p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg text-sm"
               >
-                {p.principle}
-              </span>
+                <span className="font-semibold text-purple-700 dark:text-purple-300">
+                  {p.principle}
+                </span>
+                {p.why || p.explanation ? (
+                  <span className="text-gray-600 dark:text-gray-300">
+                    {' '}
+                    — {p.why || p.explanation}
+                  </span>
+                ) : null}
+              </div>
             ))}
           </div>
         </div>
       )}
+
+      {(() => {
+        const beforeAfter =
+          data.beforeAfter ??
+          (Array.isArray(data.changes)
+            ? data.changes.filter((change: any) => change?.before || change?.after)
+            : []);
+
+        if (!beforeAfter?.length) return null;
+
+        return (
+          <div>
+            <h4 className="font-semibold mb-2">Before / After</h4>
+            <div className="space-y-4">
+              {beforeAfter.slice(0, 3).map((item: any, i: number) => (
+                <div key={i} className="p-4 bg-gray-50 dark:bg-dark-700 rounded-xl">
+                  {item.title && <p className="font-medium mb-3">{item.title}</p>}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                    {item.before && (
+                      <div>
+                        <p className="text-xs text-gray-500 mb-1">Before</p>
+                        <CodeBlock code={item.before} />
+                      </div>
+                    )}
+                    {item.after && (
+                      <div>
+                        <p className="text-xs text-gray-500 mb-1">After</p>
+                        <CodeBlock code={item.after} />
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
 
       {data.refactoredCode && (
         <div>
@@ -217,20 +316,20 @@ function ResultCard({ tool, data, status, onExport }: ResultCardProps) {
     <div className="space-y-4">
       {data.summary && <p className="text-gray-600 dark:text-gray-300">{data.summary}</p>}
 
-      {data.performanceAnalysis && (
+      {(data.performanceAnalysis || data.complexity) && (
         <div className="grid grid-cols-2 gap-4">
           <div className="p-4 bg-gray-100 dark:bg-dark-700 rounded-xl">
             <h5 className="text-sm font-medium text-gray-500 mb-2">Original</h5>
             <p className="text-sm">
               Time:{' '}
               <span className="font-mono font-semibold">
-                {data.performanceAnalysis.original?.timeComplexity}
+                {data.performanceAnalysis?.original?.timeComplexity || data.complexity?.original?.time}
               </span>
             </p>
             <p className="text-sm">
               Space:{' '}
               <span className="font-mono font-semibold">
-                {data.performanceAnalysis.original?.spaceComplexity}
+                {data.performanceAnalysis?.original?.spaceComplexity || data.complexity?.original?.space}
               </span>
             </p>
           </div>
@@ -241,16 +340,27 @@ function ResultCard({ tool, data, status, onExport }: ResultCardProps) {
             <p className="text-sm">
               Time:{' '}
               <span className="font-mono font-semibold">
-                {data.performanceAnalysis.optimized?.timeComplexity}
+                {data.performanceAnalysis?.optimized?.timeComplexity || data.complexity?.optimized?.time}
               </span>
             </p>
             <p className="text-sm">
               Space:{' '}
               <span className="font-mono font-semibold">
-                {data.performanceAnalysis.optimized?.spaceComplexity}
+                {data.performanceAnalysis?.optimized?.spaceComplexity || data.complexity?.optimized?.space}
               </span>
             </p>
           </div>
+        </div>
+      )}
+
+      {data.keyChanges?.length > 0 && (
+        <div>
+          <h4 className="font-semibold mb-2">Key Changes</h4>
+          <ul className="list-disc pl-5 text-sm text-gray-600 dark:text-gray-300 space-y-1">
+            {data.keyChanges.map((item: string, i: number) => (
+              <li key={i}>{item}</li>
+            ))}
+          </ul>
         </div>
       )}
 
@@ -266,6 +376,34 @@ function ResultCard({ tool, data, status, onExport }: ResultCardProps) {
   const renderTestResults = (data: any) => (
     <div className="space-y-4">
       {data.summary && <p className="text-gray-600 dark:text-gray-300">{data.summary}</p>}
+
+      {data.keyTests?.length > 0 && (
+        <div>
+          <h4 className="font-semibold mb-2">Key Tests ({data.keyTests.length})</h4>
+          {data.keyTests.slice(0, 5).map((test: any, i: number) => (
+            <div key={i} className="p-3 bg-gray-100 dark:bg-dark-700 rounded-lg mb-2">
+              <div className="flex items-center justify-between mb-1">
+                <span className="font-medium text-sm">{test.name}</span>
+                <span
+                  className={cn(
+                    'text-xs px-2 py-0.5 rounded-full',
+                    test.type === 'unit'
+                      ? 'bg-blue-100 text-blue-600'
+                      : test.type === 'edge'
+                      ? 'bg-orange-100 text-orange-600'
+                      : 'bg-green-100 text-green-600'
+                  )}
+                >
+                  {test.type}
+                </span>
+              </div>
+              {test.why && (
+                <p className="text-xs text-gray-500 dark:text-gray-400">{test.why}</p>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
 
       {data.testCases?.length > 0 && (
         <div>
@@ -293,6 +431,39 @@ function ResultCard({ tool, data, status, onExport }: ResultCardProps) {
         </div>
       )}
 
+      {data.edgeCases?.length > 0 && (
+        <div>
+          <h4 className="font-semibold mb-2">Edge Cases</h4>
+          <ul className="list-disc pl-5 text-sm text-gray-600 dark:text-gray-300 space-y-1">
+            {data.edgeCases.map((item: string, i: number) => (
+              <li key={i}>{item}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {data.mocks?.length > 0 && (
+        <div>
+          <h4 className="font-semibold mb-2">Mocks</h4>
+          <ul className="list-disc pl-5 text-sm text-gray-600 dark:text-gray-300 space-y-1">
+            {data.mocks.map((item: string, i: number) => (
+              <li key={i}>{item}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {data.fixtures?.length > 0 && (
+        <div>
+          <h4 className="font-semibold mb-2">Fixtures</h4>
+          <ul className="list-disc pl-5 text-sm text-gray-600 dark:text-gray-300 space-y-1">
+            {data.fixtures.map((item: string, i: number) => (
+              <li key={i}>{item}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       {data.testCode && (
         <div>
           <h4 className="font-semibold mb-2">Generated Tests</h4>
@@ -307,6 +478,28 @@ function ResultCard({ tool, data, status, onExport }: ResultCardProps) {
       {data.title && <h3 className="text-xl font-bold">{data.title}</h3>}
 
       {data.summary && <p className="text-gray-600 dark:text-gray-300">{data.summary}</p>}
+
+      {data.changes?.length > 0 && (
+        <div>
+          <h4 className="font-semibold mb-2">Changes</h4>
+          <ul className="list-disc pl-5 text-sm text-gray-600 dark:text-gray-300 space-y-1">
+            {data.changes.map((item: string, i: number) => (
+              <li key={i}>{item}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {data.testing?.length > 0 && (
+        <div>
+          <h4 className="font-semibold mb-2">Testing</h4>
+          <ul className="list-disc pl-5 text-sm text-gray-600 dark:text-gray-300 space-y-1">
+            {data.testing.map((item: string, i: number) => (
+              <li key={i}>{item}</li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {data.labels?.length > 0 && (
         <div className="flex flex-wrap gap-2">
