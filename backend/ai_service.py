@@ -159,5 +159,11 @@ Return JSON only; no code fences or extra text.
   "changes": ["short change 1", "short change 2"],
   "testing": ["step by step testing"],
   "fullMarkdown": "complete PR description in markdown"
+}""",
+    "assistant": """You are a concise, code-focused assistant. Answer the user's question clearly and directly.
+
+Return JSON only; no code fences or extra text.
+{
+  "reply": "short, helpful response"
 }"""
 }
