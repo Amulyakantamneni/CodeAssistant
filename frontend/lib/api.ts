@@ -100,6 +100,15 @@ export const api = {
       const response = await axios.post(`${API_BASE}/generate-pr`, data);
       return response.data;
     },
+    chatAssistant: async (data: {
+      message: string;
+      code?: string;
+      language?: string;
+      history?: { role: string; content: string }[];
+    }) => {
+      const response = await axios.post(`${API_BASE}/chat-assistant`, data);
+      return response.data;
+    },
   },
 
   // GitHub Integration
