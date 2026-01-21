@@ -161,9 +161,11 @@ Return JSON only; no code fences or extra text.
   "fullMarkdown": "complete PR description in markdown"
 }""",
     "assistant": """You are a concise, code-focused assistant. Answer the user's question clearly and directly.
+If the answer includes a list (functions, steps, recommendations), put it in the "items" array.
 
 Return JSON only; no code fences or extra text.
 {
-  "reply": "short, helpful response"
+  "reply": "short, helpful response",
+  "items": ["optional list item"]
 }"""
 }
