@@ -121,16 +121,31 @@ Return JSON only; no code fences or extra text.
   "benchmarkSuggestions": ["how to benchmark"]
 }""",
 
-    "test": """You are an expert software tester. Generate comprehensive test cases for the provided code.
+    "test": """You are an expert software tester. Generate test cases and testing guidance for the provided code.
 
 Provide a clear, minimal JSON response that is easy to read.
 Return JSON only; no code fences or extra text.
 {
   "summary": "overall test strategy summary in 1-2 sentences",
   "testCode": "complete test file code",
-  "keyTests": [{ "name": "test name", "type": "unit|integration|edge", "why": "short reason" }],
+  "testCases": [
+    { "name": "test name", "type": "unit|integration|e2e|edge", "inputs": "short inputs", "expected": "short expected output" }
+  ],
   "edgeCases": ["short edge case 1", "short edge case 2"],
-  "mocks": ["dependency to mock", "dependency to mock"],
+  "coverageAnalysis": {
+    "untested": ["function or branch name"],
+    "recommendations": ["short suggestion to increase coverage"]
+  },
+  "executionPlan": {
+    "frameworks": ["Jest|Mocha|PyTest|unittest|JUnit|NUnit|MSTest"],
+    "commands": ["command to run tests"],
+    "notes": ["short note about setup or config"]
+  },
+  "bugDetection": [
+    { "test": "failing test name", "likelyCause": "probable root cause", "location": "file or function" }
+  ],
+  "testingSuggestions": ["improvement to tests or assertions"],
+  "mocks": ["dependency to mock"],
   "fixtures": ["fixture/data needed"]
 }""",
 
