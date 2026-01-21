@@ -85,6 +85,18 @@ class JobResponse(BaseModel):
     status: str
 
 
+class ChatMessage(BaseModel):
+    role: str
+    content: str
+
+
+class ChatRequest(BaseModel):
+    message: str
+    code: Optional[str] = ""
+    language: Optional[str] = ""
+    history: Optional[List[ChatMessage]] = None
+
+
 # Health check
 @app.get("/api/health")
 async def health_check():
@@ -282,6 +294,31 @@ async def test_sync(request: TestRequest):
         result = await analyze_with_ai(PROMPTS["test"], user_prompt)
 
         return {"success": True, "data": result, "tool": "tester"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/chat-assistant")
+async def chat_assistant(request: ChatRequest):
+    """Chat assistant endpoint with optional code context."""
+    try:
+        history = request.history or []
+        history_text = "\n".join([f"{item.role}: {item.content}" for item in history])
+        code_block = request.code or ""
+        user_prompt = f"""
+Language: {request.language or 'auto-detect'}
+
+Code:
+{code_block}
+
+History:
+{history_text or 'None'}
+
+User Question:
+{request.message}
+"""
+        result = await analyze_with_ai(PROMPTS["assistant"], user_prompt)
+        return {"success": True, "data": result, "tool": "assistant"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
