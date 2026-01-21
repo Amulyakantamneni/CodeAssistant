@@ -49,7 +49,12 @@ export function ChatAssistant({ code, language }: ChatAssistantProps) {
       });
       const reply =
         response?.data?.reply || response?.reply || 'I could not generate a reply.';
-      setMessages((prev) => [...prev, { role: 'assistant', content: reply }]);
+      const items = response?.data?.items || response?.items;
+      const formatted =
+        items?.length > 0
+          ? `${reply}\n${items.map((item: string) => `- ${item}`).join('\n')}`
+          : reply;
+      setMessages((prev) => [...prev, { role: 'assistant', content: formatted }]);
     } catch (error: any) {
       const fallback =
         error?.response?.data?.detail || error?.message || 'Chat failed. Please try again.';
@@ -81,7 +86,7 @@ export function ChatAssistant({ code, language }: ChatAssistantProps) {
           <div
             key={`${message.role}-${index}`}
             className={cn(
-              'p-3 rounded-xl leading-relaxed',
+              'p-3 rounded-xl leading-relaxed whitespace-pre-wrap',
               message.role === 'user'
                 ? 'bg-blue-500 text-white ml-8'
                 : 'bg-white dark:bg-dark-800 text-gray-700 dark:text-gray-200 mr-8 border border-gray-200/60 dark:border-dark-700/60'
