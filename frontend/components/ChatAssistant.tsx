@@ -32,7 +32,10 @@ export function ChatAssistant({ code, language }: ChatAssistantProps) {
     const trimmed = input.trim();
     if (!trimmed || isLoading) return;
 
-    const nextMessages = [...messages, { role: 'user', content: trimmed }];
+    const nextMessages: ChatMessage[] = [
+      ...messages,
+      { role: 'user', content: trimmed },
+    ];
     setMessages(nextMessages);
     setInput('');
     setIsLoading(true);
