@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Diamond, Link, Upload, X } from 'lucide-react';
 import { cn, LANGUAGES, detectLanguageFromExtension } from '@/lib/utils';
 
@@ -43,7 +44,7 @@ export function CodeInput({
   );
 
   return (
-    <div className="bg-white/90 dark:bg-dark-800/90 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200/50 dark:border-dark-700/50 overflow-hidden">
+    <div className="card-3d rounded-2xl overflow-hidden">
       {/* Input Mode Toggle */}
       <div className="flex border-b border-gray-200 dark:border-dark-700">
         <button
@@ -127,74 +128,101 @@ export function CodeInput({
           </label>
         </div>
 
-        {inputMode === 'code' && (
-          <div className="relative">
-            <textarea
-              value={code}
-              onChange={(e) => setCode(e.target.value)}
-              placeholder="Paste your code here..."
-              className="w-full h-64 p-4 font-mono text-sm text-gray-100 rounded-xl border-0 focus:ring-2 focus:ring-primary-500 outline-none resize-none code-editor-bg"
-              spellCheck={false}
-            />
-            {code && (
-              <button
-                onClick={() => setCode('')}
-                className="absolute top-2 right-2 p-1.5 bg-white/10 hover:bg-white/20 rounded-lg transition-colors"
-              >
-                <X className="w-4 h-4 text-gray-300" />
-              </button>
-            )}
-            <div className="absolute bottom-3 right-3 text-xs text-gray-400">
-              {code.length} characters – {code.split('\n').length} lines
-            </div>
-          </div>
-        )}
-
-        {inputMode === 'github' && (
-          <div className="relative">
-            <input
-              type="url"
-              value={githubUrl}
-              onChange={(e) => setGithubUrl(e.target.value)}
-              placeholder="https://github.com/user/repo/blob/main/file.js"
-              className="w-full px-4 py-4 bg-gray-100 dark:bg-dark-700 border border-gray-300 dark:border-dark-600 rounded-xl text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
-            />
-            {githubUrl && (
-              <button
-                onClick={() => setGithubUrl('')}
-                className="absolute top-1/2 -translate-y-1/2 right-3 p-1 bg-gray-200 dark:bg-dark-600 hover:bg-gray-300 dark:hover:bg-dark-500 rounded-lg transition-colors"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            )}
-            <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-              Enter a direct link to a file on GitHub (e.g.,
-              https://github.com/user/repo/blob/main/src/file.js)
-            </p>
-          </div>
-        )}
-
-        {inputMode === 'upload' && (
-          <div className="relative">
-            <label className="flex flex-col items-center justify-center w-full h-64 border-2 border-dashed border-gray-300 dark:border-dark-600 rounded-xl cursor-pointer bg-gray-50 dark:bg-dark-700/50 hover:bg-gray-100 dark:hover:bg-dark-700 transition-colors">
-              <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                <Upload className="w-10 h-10 mb-3 text-gray-400" />
-                <p className="mb-2 text-sm text-gray-500 dark:text-gray-400">
-                  <span className="font-semibold">Click to upload</span> or drag and drop
-                </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  Supported: .js, .ts, .py, .java, .cpp, .go, .rs, .rb, .php, and more
-                </p>
-              </div>
-              <input
-                type="file"
-                onChange={handleFileUpload}
-                className="hidden"
-                accept=".js,.jsx,.ts,.tsx,.py,.java,.cpp,.cc,.c,.cs,.go,.rs,.rb,.php,.swift,.kt,.scala,.r,.sql,.html,.css,.json,.xml,.yaml,.yml,.md,.txt"
+        <AnimatePresence mode="wait">
+          {inputMode === 'code' && (
+            <motion.div
+              key="code"
+              className="relative"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 20 }}
+              transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+            >
+              <textarea
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+                placeholder="Paste your code here..."
+                className="w-full h-64 p-4 font-mono text-sm text-gray-100 rounded-xl border-0 focus:ring-2 focus:ring-primary-500 outline-none resize-none code-editor-bg"
+                spellCheck={false}
               />
-            </label>
-          </div>
-        )}
+              {code && (
+                <motion.button
+                  onClick={() => setCode('')}
+                  className="absolute top-2 right-2 p-1.5 bg-white/10 hover:bg-white/20 rounded-lg transition-colors"
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                >
+                  <X className="w-4 h-4 text-gray-300" />
+                </motion.button>
+              )}
+              <div className="absolute bottom-3 right-3 text-xs text-gray-400">
+                {code.length} characters – {code.split('\n').length} lines
+              </div>
+            </motion.div>
+          )}
+
+          {inputMode === 'github' && (
+            <motion.div
+              key="github"
+              className="relative"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 20 }}
+              transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+            >
+              <input
+                type="url"
+                value={githubUrl}
+                onChange={(e) => setGithubUrl(e.target.value)}
+                placeholder="https://github.com/user/repo/blob/main/file.js"
+                className="w-full px-4 py-4 bg-gray-100 dark:bg-dark-700 border border-gray-300 dark:border-dark-600 rounded-xl text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
+              />
+              {githubUrl && (
+                <motion.button
+                  onClick={() => setGithubUrl('')}
+                  className="absolute top-1/2 -translate-y-1/2 right-3 p-1 bg-gray-200 dark:bg-dark-600 hover:bg-gray-300 dark:hover:bg-dark-500 rounded-lg transition-colors"
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                >
+                  <X className="w-4 h-4" />
+                </motion.button>
+              )}
+              <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                Enter a direct link to a file on GitHub (e.g.,
+                https://github.com/user/repo/blob/main/src/file.js)
+              </p>
+            </motion.div>
+          )}
+
+          {inputMode === 'upload' && (
+            <motion.div
+              key="upload"
+              className="relative"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 20 }}
+              transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+            >
+              <label className="flex flex-col items-center justify-center w-full h-64 border-2 border-dashed border-gray-300 dark:border-dark-600 rounded-xl cursor-pointer bg-gray-50 dark:bg-dark-700/50 hover:bg-gray-100 dark:hover:bg-dark-700 transition-colors">
+                <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                  <Upload className="w-10 h-10 mb-3 text-gray-400" />
+                  <p className="mb-2 text-sm text-gray-500 dark:text-gray-400">
+                    <span className="font-semibold">Click to upload</span> or drag and drop
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    Supported: .js, .ts, .py, .java, .cpp, .go, .rs, .rb, .php, and more
+                  </p>
+                </div>
+                <input
+                  type="file"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                  accept=".js,.jsx,.ts,.tsx,.py,.java,.cpp,.cc,.c,.cs,.go,.rs,.rb,.php,.swift,.kt,.scala,.r,.sql,.html,.css,.json,.xml,.yaml,.yml,.md,.txt"
+                />
+              </label>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );
