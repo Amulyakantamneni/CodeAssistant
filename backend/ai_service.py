@@ -1,8 +1,44 @@
 import json
+import re
 from openai import OpenAI
 from config import settings
 
 client = OpenAI(api_key=settings.OPENAI_API_KEY)
+
+def _parse_ai_json(content: str) -> dict:
+    """Parse JSON from model output, including fenced or prefixed responses."""
+    cleaned = content.strip()
+    candidates = [cleaned]
+
+    fenced = re.search(r"```(?:json)?\s*(.*?)\s*```", cleaned, re.DOTALL | re.IGNORECASE)
+    if fenced:
+        candidates.insert(0, fenced.group(1).strip())
+
+    first_curly = cleaned.find("{")
+    last_curly = cleaned.rfind("}")
+    if first_curly != -1 and last_curly != -1 and last_curly > first_curly:
+        candidates.append(cleaned[first_curly : last_curly + 1])
+
+    first_bracket = cleaned.find("[")
+    last_bracket = cleaned.rfind("]")
+    if first_bracket != -1 and last_bracket != -1 and last_bracket > first_bracket:
+        candidates.append(cleaned[first_bracket : last_bracket + 1])
+
+    for candidate in candidates:
+        try:
+            parsed = json.loads(candidate)
+            if isinstance(parsed, str):
+                nested = parsed.strip()
+                if (nested.startswith("{") and nested.endswith("}")) or (
+                    nested.startswith("[") and nested.endswith("]")
+                ):
+                    return json.loads(nested)
+            return parsed
+        except json.JSONDecodeError:
+            continue
+
+    return {"raw": content}
+
 
 async def analyze_with_ai(system_prompt: str, user_prompt: str) -> dict:
     """Call OpenAI API for code analysis."""
@@ -18,11 +54,7 @@ async def analyze_with_ai(system_prompt: str, user_prompt: str) -> dict:
         )
         content = response.choices[0].message.content
 
-        # Try to parse as JSON
-        try:
-            return json.loads(content)
-        except json.JSONDecodeError:
-            return {"raw": content}
+        return _parse_ai_json(content)
     except Exception as e:
         raise Exception(f"AI Analysis failed: {str(e)}")
 
@@ -41,121 +73,99 @@ def analyze_with_ai_sync(system_prompt: str, user_prompt: str) -> dict:
         )
         content = response.choices[0].message.content
 
-        try:
-            return json.loads(content)
-        except json.JSONDecodeError:
-            return {"raw": content}
+        return _parse_ai_json(content)
     except Exception as e:
         raise Exception(f"AI Analysis failed: {str(e)}")
 
 
 # Tool-specific prompts
 PROMPTS = {
-    "debug": """You are an expert code debugger. Analyze the provided code and identify:
-1. Syntax errors with line numbers
-2. Logic errors and potential bugs
-3. Runtime errors that could occur
-4. Edge cases that aren't handled
-5. Null/undefined reference issues
-6. Type mismatches
+    "debug": """You are an expert code debugger. Analyze the provided code and identify issues.
 
-Format your response as JSON with the following structure:
+Provide a clear, minimal JSON response that is easy to read.
+Return JSON only; no code fences or extra text.
 {
-  "syntaxErrors": [{ "line": number, "error": "description", "suggestion": "fix" }],
-  "logicErrors": [{ "line": number, "error": "description", "suggestion": "fix" }],
-  "runtimeErrors": [{ "line": number, "error": "description", "suggestion": "fix" }],
-  "edgeCases": [{ "description": "description", "suggestion": "fix" }],
-  "summary": "overall summary",
-  "fixedCode": "corrected code if applicable",
-  "severity": "low|medium|high|critical"
+  "summary": "overall summary in 1-2 sentences",
+  "severity": "low|medium|high|critical",
+  "issues": [{ "category": "syntax|logic|runtime|edge|type", "line": number, "issue": "description", "suggestion": "fix" }],
+  "fixedCode": "corrected code if applicable"
 }""",
 
     "refactor": """You are an expert code refactoring specialist. Apply clean code principles to refactor the provided code.
-Focus on these principles: SOLID, DRY, KISS, Clean Code
+Focus on: SOLID, DRY, KISS, Clean Code
 
-Provide:
-1. Refactored code with improvements
-2. List of changes made
-3. Explanation of each principle applied
-4. Before/after comparison for key changes
-
-Format your response as JSON:
+Provide a clear, minimal JSON response that is easy to read.
+Return JSON only; no code fences or extra text.
 {
+  "summary": "overall summary in 1-2 sentences",
   "refactoredCode": "the improved code",
-  "changes": [{ "type": "principle applied", "description": "what was changed", "before": "old code snippet", "after": "new code snippet" }],
-  "principlesApplied": [{ "principle": "name", "explanation": "how it was applied" }],
-  "improvements": ["list of improvements"],
-  "readabilityScore": { "before": number, "after": number },
-  "summary": "overall summary"
+  "keyChanges": ["short bullet 1", "short bullet 2", "short bullet 3"],
+  "principlesApplied": [{ "principle": "name", "why": "brief explanation" }],
+  "beforeAfter": [{ "title": "short change title", "before": "old snippet", "after": "new snippet" }]
 }""",
 
     "optimize": """You are an expert code optimization specialist. Analyze and optimize the provided code.
 Focus areas: time complexity, space complexity, memory usage, execution speed
 
-Provide:
-1. Optimized version of the code
-2. Performance analysis (Big O notation for time and space)
-3. Specific optimizations made
-4. Benchmarking suggestions
-5. Trade-offs of optimizations
-
-Format your response as JSON:
+Provide a clear, minimal JSON response that is easy to read.
+Return JSON only; no code fences or extra text.
 {
+  "summary": "overall summary in 1-2 sentences",
   "optimizedCode": "the optimized code",
-  "performanceAnalysis": {
-    "original": { "timeComplexity": "O(?)", "spaceComplexity": "O(?)" },
-    "optimized": { "timeComplexity": "O(?)", "spaceComplexity": "O(?)" }
+  "complexity": {
+    "original": { "time": "O(?)", "space": "O(?)" },
+    "optimized": { "time": "O(?)", "space": "O(?)" }
   },
-  "optimizations": [{ "type": "optimization type", "description": "what was optimized", "impact": "expected improvement" }],
+  "keyChanges": ["short bullet 1", "short bullet 2", "short bullet 3"],
   "tradeoffs": ["list of tradeoffs"],
-  "benchmarkSuggestions": ["how to benchmark"],
-  "memoryImprovements": ["memory-related improvements"],
-  "summary": "overall summary"
+  "benchmarkSuggestions": ["how to benchmark"]
 }""",
 
-    "test": """You are an expert software tester. Generate comprehensive test cases for the provided code.
+    "test": """You are an expert software tester. Generate test cases and testing guidance for the provided code.
 
-Provide:
-1. Unit tests covering all functions/methods
-2. Edge case tests
-3. Integration test suggestions
-4. Test data/fixtures
-5. Mock suggestions for dependencies
-6. Code coverage analysis
-
-Format your response as JSON:
+Provide a clear, minimal JSON response that is easy to read.
+Return JSON only; no code fences or extra text.
 {
+  "summary": "overall test strategy summary in 1-2 sentences",
   "testCode": "complete test file code",
-  "testCases": [{ "name": "test name", "description": "what it tests", "type": "unit|integration|edge", "code": "test code" }],
-  "edgeCases": [{ "scenario": "description", "testCode": "test for this case" }],
-  "mockSuggestions": [{ "dependency": "what to mock", "mockCode": "how to mock it" }],
-  "fixtures": { "testData": "sample test data" },
-  "coverageAnalysis": { "functionsToTest": ["list"], "branchesToCover": ["list"] },
-  "summary": "overall test strategy summary"
+  "testCases": [
+    { "name": "test name", "type": "unit|integration|e2e|edge", "inputs": "short inputs", "expected": "short expected output" }
+  ],
+  "edgeCases": ["short edge case 1", "short edge case 2"],
+  "coverageAnalysis": {
+    "untested": ["function or branch name"],
+    "recommendations": ["short suggestion to increase coverage"]
+  },
+  "executionPlan": {
+    "frameworks": ["Jest|Mocha|PyTest|unittest|JUnit|NUnit|MSTest"],
+    "commands": ["command to run tests"],
+    "notes": ["short note about setup or config"]
+  },
+  "bugDetection": [
+    { "test": "failing test name", "likelyCause": "probable root cause", "location": "file or function" }
+  ],
+  "testingSuggestions": ["improvement to tests or assertions"],
+  "mocks": ["dependency to mock"],
+  "fixtures": ["fixture/data needed"]
 }""",
 
-    "pr": """You are an expert at writing pull request descriptions. Generate a comprehensive PR description.
+    "pr": """You are an expert at writing pull request descriptions. Generate a clear PR description.
 
-Provide:
-1. A clear, descriptive title
-2. Summary of changes
-3. Detailed description
-4. Testing instructions
-5. Checklist items
-6. Related issues/tickets format
-
-Format your response as JSON:
+Provide a clear, minimal JSON response that is easy to read.
+Return JSON only; no code fences or extra text.
 {
   "title": "PR title",
   "summary": "brief summary",
-  "description": "detailed markdown description",
-  "changes": [{ "file": "filename", "change": "what changed" }],
-  "testingInstructions": ["step by step testing"],
-  "checklist": ["- [ ] item"],
-  "breakingChanges": ["any breaking changes"],
-  "relatedIssues": "format for linking issues",
-  "reviewers": ["suggested reviewer roles"],
-  "labels": ["suggested labels"],
+  "changes": ["short change 1", "short change 2"],
+  "testing": ["step by step testing"],
   "fullMarkdown": "complete PR description in markdown"
+}""",
+    "assistant": """You are a concise, code-focused assistant. Answer the user's question clearly and directly.
+If the answer includes a list (functions, steps, recommendations), put it in the "items" array.
+
+Return JSON only; no code fences or extra text.
+{
+  "reply": "short, helpful response",
+  "items": ["optional list item"]
 }"""
 }

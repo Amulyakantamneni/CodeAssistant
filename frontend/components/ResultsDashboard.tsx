@@ -117,6 +117,31 @@ function ResultCard({ tool, data, status, onExport }: ResultCardProps) {
 
       {data.summary && <p className="text-gray-600 dark:text-gray-300">{data.summary}</p>}
 
+      {data.issues?.length > 0 && (
+        <div>
+          <h4 className="font-semibold mb-2">Issues ({data.issues.length})</h4>
+          <div className="space-y-2">
+            {data.issues.map((issue: any, i: number) => (
+              <div key={i} className="p-3 bg-gray-100 dark:bg-dark-700 rounded-lg">
+                <p className="text-sm">
+                  <span className="font-medium">
+                    {issue.category ? `${issue.category.toUpperCase()}` : 'Issue'}
+                    {issue.line ? ` • Line ${issue.line}` : ''}
+                    :
+                  </span>{' '}
+                  {issue.issue}
+                </p>
+                {issue.suggestion && (
+                  <p className="text-sm text-green-600 dark:text-green-400 mt-1">
+                    Fix: {issue.suggestion}
+                  </p>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {data.syntaxErrors?.length > 0 && (
         <div>
           <h4 className="font-semibold text-red-500 mb-2">
@@ -188,21 +213,95 @@ function ResultCard({ tool, data, status, onExport }: ResultCardProps) {
         </div>
       )}
 
+      {(() => {
+        const keyChanges =
+          data.keyChanges ??
+          data.improvements ??
+          (Array.isArray(data.changes)
+            ? data.changes
+                .map((change: any) => {
+                  if (!change) return null;
+                  if (change.description && change.type) {
+                    return `${change.type}: ${change.description}`;
+                  }
+                  if (change.description) return change.description;
+                  return null;
+                })
+                .filter(Boolean)
+            : []);
+
+        return keyChanges?.length > 0 ? (
+          <div>
+            <h4 className="font-semibold mb-2">Key Changes</h4>
+            <ul className="list-disc pl-5 text-sm text-gray-600 dark:text-gray-300 space-y-1">
+              {keyChanges.map((item: string, i: number) => (
+                <li key={i}>{item}</li>
+              ))}
+            </ul>
+          </div>
+        ) : null;
+      })()}
+
       {data.principlesApplied?.length > 0 && (
         <div>
           <h4 className="font-semibold mb-2">Principles Applied</h4>
-          <div className="flex flex-wrap gap-2">
+          <div className="space-y-2">
             {data.principlesApplied.map((p: any, i: number) => (
-              <span
+              <div
                 key={i}
-                className="px-3 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-full text-sm"
+                className="p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg text-sm"
               >
-                {p.principle}
-              </span>
+                <span className="font-semibold text-purple-700 dark:text-purple-300">
+                  {p.principle}
+                </span>
+                {p.why || p.explanation ? (
+                  <span className="text-gray-600 dark:text-gray-300">
+                    {' '}
+                    — {p.why || p.explanation}
+                  </span>
+                ) : null}
+              </div>
             ))}
           </div>
         </div>
       )}
+
+      {(() => {
+        const beforeAfter =
+          data.beforeAfter ??
+          (Array.isArray(data.changes)
+            ? data.changes.filter((change: any) => change?.before || change?.after)
+            : []);
+
+        if (!beforeAfter?.length) return null;
+
+        return (
+          <div>
+            <h4 className="font-semibold mb-2">Before / After</h4>
+            <div className="space-y-4">
+              {beforeAfter.slice(0, 3).map((item: any, i: number) => (
+                <div key={i} className="p-4 bg-gray-50 dark:bg-dark-700 rounded-xl">
+                  {item.title && <p className="font-medium mb-3">{item.title}</p>}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                    {item.before && (
+                      <div>
+                        <p className="text-xs text-gray-500 mb-1">Before</p>
+                        <CodeBlock code={item.before} />
+                      </div>
+                    )}
+                    {item.after && (
+                      <div>
+                        <p className="text-xs text-gray-500 mb-1">After</p>
+                        <CodeBlock code={item.after} />
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
 
       {data.refactoredCode && (
         <div>
@@ -217,20 +316,20 @@ function ResultCard({ tool, data, status, onExport }: ResultCardProps) {
     <div className="space-y-4">
       {data.summary && <p className="text-gray-600 dark:text-gray-300">{data.summary}</p>}
 
-      {data.performanceAnalysis && (
+      {(data.performanceAnalysis || data.complexity) && (
         <div className="grid grid-cols-2 gap-4">
           <div className="p-4 bg-gray-100 dark:bg-dark-700 rounded-xl">
             <h5 className="text-sm font-medium text-gray-500 mb-2">Original</h5>
             <p className="text-sm">
               Time:{' '}
               <span className="font-mono font-semibold">
-                {data.performanceAnalysis.original?.timeComplexity}
+                {data.performanceAnalysis?.original?.timeComplexity || data.complexity?.original?.time}
               </span>
             </p>
             <p className="text-sm">
               Space:{' '}
               <span className="font-mono font-semibold">
-                {data.performanceAnalysis.original?.spaceComplexity}
+                {data.performanceAnalysis?.original?.spaceComplexity || data.complexity?.original?.space}
               </span>
             </p>
           </div>
@@ -241,16 +340,27 @@ function ResultCard({ tool, data, status, onExport }: ResultCardProps) {
             <p className="text-sm">
               Time:{' '}
               <span className="font-mono font-semibold">
-                {data.performanceAnalysis.optimized?.timeComplexity}
+                {data.performanceAnalysis?.optimized?.timeComplexity || data.complexity?.optimized?.time}
               </span>
             </p>
             <p className="text-sm">
               Space:{' '}
               <span className="font-mono font-semibold">
-                {data.performanceAnalysis.optimized?.spaceComplexity}
+                {data.performanceAnalysis?.optimized?.spaceComplexity || data.complexity?.optimized?.space}
               </span>
             </p>
           </div>
+        </div>
+      )}
+
+      {data.keyChanges?.length > 0 && (
+        <div>
+          <h4 className="font-semibold mb-2">Key Changes</h4>
+          <ul className="list-disc pl-5 text-sm text-gray-600 dark:text-gray-300 space-y-1">
+            {data.keyChanges.map((item: string, i: number) => (
+              <li key={i}>{item}</li>
+            ))}
+          </ul>
         </div>
       )}
 
@@ -267,10 +377,10 @@ function ResultCard({ tool, data, status, onExport }: ResultCardProps) {
     <div className="space-y-4">
       {data.summary && <p className="text-gray-600 dark:text-gray-300">{data.summary}</p>}
 
-      {data.testCases?.length > 0 && (
+      {data.keyTests?.length > 0 && (
         <div>
-          <h4 className="font-semibold mb-2">Test Cases ({data.testCases.length})</h4>
-          {data.testCases.slice(0, 5).map((test: any, i: number) => (
+          <h4 className="font-semibold mb-2">Key Tests ({data.keyTests.length})</h4>
+          {data.keyTests.slice(0, 5).map((test: any, i: number) => (
             <div key={i} className="p-3 bg-gray-100 dark:bg-dark-700 rounded-lg mb-2">
               <div className="flex items-center justify-between mb-1">
                 <span className="font-medium text-sm">{test.name}</span>
@@ -287,9 +397,164 @@ function ResultCard({ tool, data, status, onExport }: ResultCardProps) {
                   {test.type}
                 </span>
               </div>
-              <p className="text-xs text-gray-500 dark:text-gray-400">{test.description}</p>
+              {test.why && (
+                <p className="text-xs text-gray-500 dark:text-gray-400">{test.why}</p>
+              )}
             </div>
           ))}
+        </div>
+      )}
+
+      {data.testCases?.length > 0 && (
+        <div>
+          <h4 className="font-semibold mb-2">Test Cases ({data.testCases.length})</h4>
+          {data.testCases.slice(0, 5).map((test: any, i: number) => (
+            <div key={i} className="p-3 bg-gray-100 dark:bg-dark-700 rounded-lg mb-2">
+              <div className="flex items-center justify-between mb-1">
+                <span className="font-medium text-sm">{test.name}</span>
+                <span
+                  className={cn(
+                    'text-xs px-2 py-0.5 rounded-full',
+                    test.type === 'unit'
+                      ? 'bg-blue-100 text-blue-600'
+                      : test.type === 'edge'
+                      ? 'bg-orange-100 text-orange-600'
+                      : test.type === 'integration'
+                      ? 'bg-green-100 text-green-600'
+                      : 'bg-purple-100 text-purple-600'
+                  )}
+                >
+                  {test.type}
+                </span>
+              </div>
+              {test.inputs && (
+                <p className="text-xs text-gray-500 dark:text-gray-400">Inputs: {test.inputs}</p>
+              )}
+              {test.expected && (
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Expected: {test.expected}
+                </p>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {data.coverageAnalysis && (
+        <div>
+          <h4 className="font-semibold mb-2">Coverage Analysis</h4>
+          {data.coverageAnalysis.untested?.length > 0 && (
+            <div className="mb-2">
+              <p className="text-xs text-gray-500 mb-1">Untested</p>
+              <ul className="list-disc pl-5 text-sm text-gray-600 dark:text-gray-300 space-y-1">
+                {data.coverageAnalysis.untested.map((item: string, i: number) => (
+                  <li key={i}>{item}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {data.coverageAnalysis.recommendations?.length > 0 && (
+            <div>
+              <p className="text-xs text-gray-500 mb-1">Recommendations</p>
+              <ul className="list-disc pl-5 text-sm text-gray-600 dark:text-gray-300 space-y-1">
+                {data.coverageAnalysis.recommendations.map((item: string, i: number) => (
+                  <li key={i}>{item}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      )}
+
+      {data.executionPlan && (
+        <div>
+          <h4 className="font-semibold mb-2">Execution Plan</h4>
+          {data.executionPlan.frameworks?.length > 0 && (
+            <p className="text-sm text-gray-600 dark:text-gray-300">
+              Frameworks: {data.executionPlan.frameworks.join(', ')}
+            </p>
+          )}
+          {data.executionPlan.commands?.length > 0 && (
+            <div className="mt-2 space-y-1">
+              {data.executionPlan.commands.map((cmd: string, i: number) => (
+                <pre key={i} className="text-xs bg-gray-100 dark:bg-dark-700 rounded p-2">
+                  {cmd}
+                </pre>
+              ))}
+            </div>
+          )}
+          {data.executionPlan.notes?.length > 0 && (
+            <ul className="list-disc pl-5 text-sm text-gray-600 dark:text-gray-300 space-y-1 mt-2">
+              {data.executionPlan.notes.map((item: string, i: number) => (
+                <li key={i}>{item}</li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+
+      {data.bugDetection?.length > 0 && (
+        <div>
+          <h4 className="font-semibold mb-2">Bug Detection</h4>
+          <div className="space-y-2">
+            {data.bugDetection.map((item: any, i: number) => (
+              <div key={i} className="p-3 bg-red-50 dark:bg-red-900/20 rounded-lg text-sm">
+                <p className="font-medium">{item.test}</p>
+                {item.likelyCause && (
+                  <p className="text-gray-600 dark:text-gray-300">
+                    Cause: {item.likelyCause}
+                  </p>
+                )}
+                {item.location && (
+                  <p className="text-gray-500 dark:text-gray-400">Location: {item.location}</p>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {data.testingSuggestions?.length > 0 && (
+        <div>
+          <h4 className="font-semibold mb-2">Testing Suggestions</h4>
+          <ul className="list-disc pl-5 text-sm text-gray-600 dark:text-gray-300 space-y-1">
+            {data.testingSuggestions.map((item: string, i: number) => (
+              <li key={i}>{item}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {data.edgeCases?.length > 0 && (
+        <div>
+          <h4 className="font-semibold mb-2">Edge Cases</h4>
+          <ul className="list-disc pl-5 text-sm text-gray-600 dark:text-gray-300 space-y-1">
+            {data.edgeCases.map((item: string, i: number) => (
+              <li key={i}>{item}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {data.mocks?.length > 0 && (
+        <div>
+          <h4 className="font-semibold mb-2">Mocks</h4>
+          <ul className="list-disc pl-5 text-sm text-gray-600 dark:text-gray-300 space-y-1">
+            {data.mocks.map((item: string, i: number) => (
+              <li key={i}>{item}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {data.fixtures?.length > 0 && (
+        <div>
+          <h4 className="font-semibold mb-2">Fixtures</h4>
+          <ul className="list-disc pl-5 text-sm text-gray-600 dark:text-gray-300 space-y-1">
+            {data.fixtures.map((item: string, i: number) => (
+              <li key={i}>{item}</li>
+            ))}
+          </ul>
         </div>
       )}
 
@@ -307,6 +572,28 @@ function ResultCard({ tool, data, status, onExport }: ResultCardProps) {
       {data.title && <h3 className="text-xl font-bold">{data.title}</h3>}
 
       {data.summary && <p className="text-gray-600 dark:text-gray-300">{data.summary}</p>}
+
+      {data.changes?.length > 0 && (
+        <div>
+          <h4 className="font-semibold mb-2">Changes</h4>
+          <ul className="list-disc pl-5 text-sm text-gray-600 dark:text-gray-300 space-y-1">
+            {data.changes.map((item: string, i: number) => (
+              <li key={i}>{item}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {data.testing?.length > 0 && (
+        <div>
+          <h4 className="font-semibold mb-2">Testing</h4>
+          <ul className="list-disc pl-5 text-sm text-gray-600 dark:text-gray-300 space-y-1">
+            {data.testing.map((item: string, i: number) => (
+              <li key={i}>{item}</li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {data.labels?.length > 0 && (
         <div className="flex flex-wrap gap-2">
@@ -342,9 +629,10 @@ function ResultCard({ tool, data, status, onExport }: ResultCardProps) {
     }
 
     if (status === 'failed') {
+      const errorMessage = data?.error;
       return (
         <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-lg text-red-600 dark:text-red-400">
-          Analysis failed. Please try again.
+          {errorMessage ? `Analysis failed: ${errorMessage}` : 'Analysis failed. Please try again.'}
         </div>
       );
     }
@@ -378,9 +666,12 @@ function ResultCard({ tool, data, status, onExport }: ResultCardProps) {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="bg-white dark:bg-dark-800 rounded-2xl shadow-lg border border-gray-200 dark:border-dark-700 overflow-hidden"
+      initial={{ opacity: 0, y: 30, scale: 0.95 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, y: -20, scale: 0.95 }}
+      transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+      whileHover={{ y: -2 }}
+      className="glass-card card-shine rounded-2xl overflow-hidden"
     >
       <button
         onClick={() => setExpanded(!expanded)}
@@ -448,29 +739,64 @@ export function ResultsDashboard({ results, onClear }: ResultsDashboardProps) {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
+    <motion.div
+      className="space-y-4"
+      initial="hidden"
+      animate="visible"
+      variants={{
+        hidden: { opacity: 0 },
+        visible: {
+          opacity: 1,
+          transition: { staggerChildren: 0.1 },
+        },
+      }}
+    >
+      <motion.div
+        className="flex items-center justify-between"
+        variants={{
+          hidden: { opacity: 0, y: 20 },
+          visible: { opacity: 1, y: 0 },
+        }}
+      >
         <h2 className="text-2xl font-bold">Results Dashboard</h2>
-        <button
+        <motion.button
           onClick={onClear}
           className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-dark-700 rounded-lg transition-colors"
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
         >
           <X className="w-4 h-4" />
           Clear Results
-        </button>
-      </div>
+        </motion.button>
+      </motion.div>
 
       <div className="space-y-4">
-        {Object.entries(results).map(([tool, result]) => (
-          <ResultCard
+        {Object.entries(results).map(([tool, result], index) => (
+          <motion.div
             key={tool}
-            tool={tool}
-            data={result?.data}
-            status={result?.status as any}
-            onExport={handleExport}
-          />
+            variants={{
+              hidden: { opacity: 0, y: 30, scale: 0.95 },
+              visible: {
+                opacity: 1,
+                y: 0,
+                scale: 1,
+                transition: {
+                  duration: 0.4,
+                  delay: index * 0.1,
+                  ease: [0.16, 1, 0.3, 1],
+                },
+              },
+            }}
+          >
+            <ResultCard
+              tool={tool}
+              data={result?.data}
+              status={result?.status as any}
+              onExport={handleExport}
+            />
+          </motion.div>
         ))}
       </div>
-    </div>
+    </motion.div>
   );
 }

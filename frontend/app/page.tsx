@@ -1,241 +1,261 @@
 'use client';
 
-import { useState, useCallback } from 'react';
-import toast from 'react-hot-toast';
+import Link from 'next/link';
+import { motion } from 'framer-motion';
+import { ArrowRight, Code, Zap, Shield, Sparkles } from 'lucide-react';
 import { Header } from '@/components/Header';
-import { CodeInput } from '@/components/CodeInput';
-import { ToolSelector } from '@/components/ToolSelector';
-import { ResultsDashboard } from '@/components/ResultsDashboard';
-import { GitHubExport } from '@/components/GitHubExport';
-import { api } from '@/lib/api';
+import { FeatureGrid } from '@/components/FeatureGrid';
 
-export default function Home() {
-  // Input state
-  const [code, setCode] = useState('');
-  const [githubUrl, setGithubUrl] = useState('');
-  const [language, setLanguage] = useState('');
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+      delayChildren: 0.1,
+    },
+  },
+};
 
-  // Tool selection state
-  const [selectedTools, setSelectedTools] = useState<string[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+const itemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.5,
+      ease: [0.16, 1, 0.3, 1],
+    },
+  },
+};
 
-  // Results state
-  const [results, setResults] = useState<Record<string, { status: string; data?: any }>>({});
+const HERO_FEATURES = [
+  { icon: Sparkles, text: 'Prompt-to-code generation' },
+  { icon: Zap, text: 'Instant experiments & analytics' },
+  { icon: Shield, text: 'Secure & Private' },
+];
 
-  // Modified code from results
-  const [modifiedCode, setModifiedCode] = useState('');
+const RECOMMENDED_SDKS = [
+  {
+    name: 'PostHog',
+    description: 'Feature flags, session replay, and product analytics in one.',
+  },
+  {
+    name: 'Statsig',
+    description: 'Experimentation, feature gates, and safe rollouts.',
+  },
+  {
+    name: 'Plausible / GA4',
+    description: 'Privacy-first web analytics or Google Analytics 4.',
+  },
+];
 
-  const hasInput = code.trim().length > 0 || githubUrl.trim().length > 0;
-
-  const runTools = useCallback(async () => {
-    if (!hasInput || selectedTools.length === 0) {
-      toast.error('Please enter code and select at least one tool');
-      return;
-    }
-
-    setIsLoading(true);
-    setResults({});
-
-    // Initialize results with pending status
-    const initialResults: Record<string, { status: string; data?: any }> = {};
-    selectedTools.forEach((tool: string) => {
-      initialResults[tool] = { status: 'pending' };
-    });
-    setResults(initialResults);
-
-    try {
-      // Launch all tools in parallel using sync endpoints (no Redis required)
-      const toolPromises = selectedTools.map(async (tool: string) => {
-        try {
-          // Update to running status
-          setResults((prev: Record<string, { status: string; data?: any }>) => ({
-            ...prev,
-            [tool]: { status: 'running' },
-          }));
-
-          const requestData = {
-            code,
-            language,
-            github_url: githubUrl,
-          };
-
-          let response;
-          switch (tool) {
-            case 'debug':
-              response = await api.sync.debug(requestData);
-              break;
-            case 'refactor':
-              response = await api.sync.refactor(requestData);
-              break;
-            case 'optimize':
-              response = await api.sync.optimize(requestData);
-              break;
-            case 'test':
-              response = await api.sync.test(requestData);
-              break;
-            case 'pr':
-              response = await api.sync.generatePR({
-                original_code: code,
-                modified_code: modifiedCode || code,
-                language,
-              });
-              break;
-            default:
-              throw new Error(`Unknown tool: ${tool}`);
-          }
-
-          // Extract modified code from results
-          if (response.data) {
-            const data = response.data;
-            if (data.fixedCode) {
-              setModifiedCode(data.fixedCode);
-            } else if (data.refactoredCode) {
-              setModifiedCode(data.refactoredCode);
-            } else if (data.optimizedCode) {
-              setModifiedCode(data.optimizedCode);
-            }
-          }
-
-          setResults((prev: Record<string, { status: string; data?: any }>) => ({
-            ...prev,
-            [tool]: {
-              status: 'completed',
-              data: response.data,
-            },
-          }));
-        } catch (error: any) {
-          console.error(`Error running ${tool}:`, error);
-          setResults((prev: Record<string, { status: string; data?: any }>) => ({
-            ...prev,
-            [tool]: { status: 'failed', data: { error: error.message } },
-          }));
-        }
-      });
-
-      await Promise.all(toolPromises);
-
-      toast.success('Analysis complete!');
-    } catch (error) {
-      console.error('Analysis failed:', error);
-      toast.error('Analysis failed. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
-  }, [code, githubUrl, language, selectedTools, hasInput, modifiedCode]);
-
-  const clearResults = () => {
-    setResults({});
-    setModifiedCode('');
-    toast.success('Results cleared');
-  };
-
-  const handleExportSuccess = () => {
-    toast.success('Successfully exported to GitHub!');
-  };
-
-  // Get the best modified code from results
-  const getBestModifiedCode = () => {
-    if (modifiedCode) return modifiedCode;
-    if (results.refactor?.data?.refactoredCode) return results.refactor.data.refactoredCode;
-    if (results.optimize?.data?.optimizedCode) return results.optimize.data.optimizedCode;
-    if (results.debug?.data?.fixedCode) return results.debug.data.fixedCode;
-    return code;
-  };
-
+export default function HomePage() {
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-dark-950">
-      <Header />
+    <div className="cosmic-bg morph-bg overflow-hidden min-h-screen">
+      {/* Floating Orbs - 3D Background Elements */}
+      <div className="floating-orb floating-orb-1" />
+      <div className="floating-orb floating-orb-2" />
+      <div className="floating-orb floating-orb-3" />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Hero Section */}
-        <div className="text-center mb-12">
-          <h1 className="text-4xl sm:text-5xl font-bold mb-4">
-            <span className="gradient-text">Code Assistant</span>
-          </h1>
-          <p className="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-            Debug, refactor, optimize, and test your code with AI-powered tools. Run multiple
-            analyses simultaneously and export to GitHub.
-          </p>
-        </div>
+      <div className="relative z-10">
+        <Header />
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Left Column - Input */}
-          <div className="lg:col-span-2 space-y-6">
-            <CodeInput
-              code={code}
-              setCode={setCode}
-              githubUrl={githubUrl}
-              setGithubUrl={setGithubUrl}
-              language={language}
-              setLanguage={setLanguage}
-            />
+        <motion.main
+          className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8"
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+        >
+          {/* Hero Section */}
+          <section className="py-16 md:py-24">
+            <motion.div className="text-center" variants={itemVariants}>
+              {/* Badge */}
+              <motion.div
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass-card mb-8"
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.5, delay: 0.1 }}
+              >
+                <Sparkles className="w-4 h-4 text-primary-500" />
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Powered by Advanced AI
+                </span>
+              </motion.div>
 
-            {/* Results Dashboard */}
-            {Object.keys(results).length > 0 && (
-              <ResultsDashboard results={results} onClear={clearResults} />
-            )}
-          </div>
+              {/* Main Title */}
+              <motion.h1
+                className="text-4xl sm:text-5xl md:text-6xl font-bold mb-6"
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+              >
+                <span className="title-gradient neon-glow">
+                  Ship Code Faster
+                </span>
+                <br />
+                <span className="text-gray-900 dark:text-white">
+                  with AI-Powered Tools
+                </span>
+              </motion.h1>
 
-          {/* Right Column - Tools & Export */}
-          <div className="space-y-6">
-            <ToolSelector
-              selectedTools={selectedTools}
-              setSelectedTools={setSelectedTools}
-              onRunTools={runTools}
-              isLoading={isLoading}
-              hasInput={hasInput}
-            />
+              {/* Subtitle */}
+              <motion.p
+                className="text-lg md:text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto mb-10"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.6, delay: 0.2 }}
+              >
+                Turn plain-English prompts into working code, then optimize,
+                test, and ship with confidence. Run experiments, track analytics,
+                and understand your users all in one powerful platform.
+              </motion.p>
 
-            {/* GitHub Export */}
-            {(code || Object.keys(results).length > 0) && (
-              <GitHubExport
-                code={getBestModifiedCode() || code}
-                results={results}
-                onSuccess={handleExportSuccess}
-              />
-            )}
+              {/* CTA Buttons */}
+              <motion.div
+                className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12"
+                variants={itemVariants}
+              >
+                <Link href="/generate">
+                  <motion.button
+                    className="hero-cta-primary flex items-center gap-2"
+                    whileHover={{ scale: 1.02, y: -3 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    <Code className="w-5 h-5" />
+                    Generate from a Prompt
+                    <ArrowRight className="w-5 h-5" />
+                  </motion.button>
+                </Link>
+                <Link href="#features">
+                  <motion.button
+                    className="hero-cta-secondary flex items-center gap-2"
+                    whileHover={{ scale: 1.02, y: -2 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    View All Features
+                  </motion.button>
+                </Link>
+              </motion.div>
 
-            {/* Quick Tips */}
-            <div className="bg-gradient-to-br from-primary-500/10 to-purple-500/10 dark:from-primary-900/20 dark:to-purple-900/20 rounded-2xl p-6 border border-primary-200 dark:border-primary-800">
-              <h3 className="font-semibold text-primary-700 dark:text-primary-400 mb-3">
-                Quick Tips
+              {/* Hero Features */}
+              <motion.div
+                className="flex flex-wrap items-center justify-center gap-6"
+                variants={itemVariants}
+              >
+                {HERO_FEATURES.map((feature, index) => (
+                  <motion.div
+                    key={index}
+                    className="flex items-center gap-2 text-gray-600 dark:text-gray-400"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.4, delay: 0.4 + index * 0.1 }}
+                  >
+                    <feature.icon className="w-5 h-5 text-primary-500" />
+                    <span className="text-sm font-medium">{feature.text}</span>
+                  </motion.div>
+                ))}
+              </motion.div>
+            </motion.div>
+          </section>
+
+          {/* Feature Grid Section */}
+          <section id="features">
+            <FeatureGrid />
+          </section>
+
+          {/* Recommended Tooling */}
+          <motion.section
+            className="py-10"
+            variants={itemVariants}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+          >
+            <div className="text-center mb-8">
+              <h3 className="text-2xl font-semibold text-gray-900 dark:text-white mb-2">
+                Recommended SDKs
               </h3>
-              <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
-                <li className="flex items-start gap-2">
-                  <span className="text-primary-500">•</span>
-                  Select multiple tools to run simultaneous analyses
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-primary-500">•</span>
-                  Use GitHub URLs to analyze remote files directly
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-primary-500">•</span>
-                  Export optimized code back to GitHub with one click
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-primary-500">•</span>
-                  Jobs run in background workers for faster processing
-                </li>
-              </ul>
+              <p className="text-gray-600 dark:text-gray-300">
+                Best-in-class tooling if you want to plug in analytics fast.
+              </p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {RECOMMENDED_SDKS.map((sdk) => (
+                <div key={sdk.name} className="glass-card rounded-2xl p-6">
+                  <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                    {sdk.name}
+                  </h4>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    {sdk.description}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </motion.section>
+
+          {/* Bottom CTA Section */}
+          <motion.section
+            className="py-16 text-center"
+            variants={itemVariants}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+          >
+            <div className="glass-card rounded-3xl p-8 md:p-12">
+              <h2 className="text-2xl md:text-3xl font-bold mb-4">
+                <span className="title-gradient">Ready to Ship Faster?</span>
+              </h2>
+              <p className="text-gray-600 dark:text-gray-300 mb-8 max-w-xl mx-auto">
+                Join thousands of developers using AI Code Assistant to write better code,
+                faster. No credit card required.
+              </p>
+              <Link href="/generate">
+                <motion.button
+                  className="hero-cta-primary flex items-center gap-2 mx-auto"
+                  whileHover={{ scale: 1.02, y: -3 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <Sparkles className="w-5 h-5" />
+                  Try for Free
+                  <ArrowRight className="w-5 h-5" />
+                </motion.button>
+              </Link>
+            </div>
+          </motion.section>
+        </motion.main>
+
+        {/* Footer */}
+        <footer className="border-t border-gray-200/50 dark:border-dark-700/50">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                AI Code Assistant - AI-Powered Development Tools
+              </p>
+              <div className="flex items-center gap-6">
+                <Link
+                  href="/contact"
+                  className="text-sm text-gray-500 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
+                >
+                  Contact Us
+                </Link>
+                <Link
+                  href="/testing"
+                  className="text-sm text-gray-500 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
+                >
+                  Testing
+                </Link>
+                <Link
+                  href="/optimizer"
+                  className="text-sm text-gray-500 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
+                >
+                  Optimizer
+                </Link>
+              </div>
             </div>
           </div>
-        </div>
-      </main>
-
-      {/* Footer */}
-      <footer className="border-t border-gray-200 dark:border-dark-700 mt-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              Code Assistant - AI-Powered Development Tools
-            </p>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              Built with Next.js + FastAPI + Redis/Celery
-            </p>
-          </div>
-        </div>
-      </footer>
+        </footer>
+      </div>
     </div>
   );
 }
