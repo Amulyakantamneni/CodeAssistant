@@ -167,5 +167,14 @@ Return JSON only; no code fences or extra text.
 {
   "reply": "short, helpful response",
   "items": ["optional list item"]
+}""",
+    "generate": """You are an expert code generator. Produce working code based on the user's prompt.
+If a framework is implied, include minimal setup and clear instructions in comments.
+
+Return JSON only; no code fences or extra text.
+{
+  "summary": "short summary of what was generated",
+  "language": "detected or chosen language",
+  "generatedCode": "the generated code"
 }"""
 }
