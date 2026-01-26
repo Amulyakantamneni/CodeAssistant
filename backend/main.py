@@ -298,6 +298,24 @@ async def test_sync(request: TestRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.post("/api/generate")
+async def generate_sync(request: CodeRequest):
+    """Synchronous code generation endpoint."""
+    try:
+        if not request.code:
+            raise HTTPException(status_code=400, detail="No prompt provided")
+
+        user_prompt = f"""
+Language: {request.language or 'auto-detect'}
+Prompt:
+{request.code}
+"""
+        result = await analyze_with_ai(PROMPTS["generate"], user_prompt)
+        return {"success": True, "data": result, "tool": "generate"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.post("/api/chat-assistant")
 async def chat_assistant(request: ChatRequest):
     """Chat assistant endpoint with optional code context."""
