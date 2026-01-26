@@ -1051,26 +1051,6 @@ code, pre, .font-mono {
   background: #000000 !important;
 }
 
-/* Single-color tool accent (blue) */
-.tool-accent {
-  background: #2563eb !important;
-}
-
-.tool-accent svg {
-  color: #ffffff !important;
-}
-
-.tool-button {
-  @apply px-6 py-3 rounded-xl font-semibold transition-all;
-  background: #2563eb;
-  color: #ffffff;
-  border: 1px solid #2563eb;
-}
-
-.tool-button:hover {
-  box-shadow: none;
-}
-
 /* Email Capture Form */
 .email-capture {
   @apply flex gap-3;
