@@ -60,32 +60,6 @@ export default function HomePage() {
           initial="hidden"
           animate="visible"
         >
-          {/* Quick Generate */}
-          <section className="pt-10 pb-4">
-            <motion.div className="glass-card rounded-2xl p-6" variants={itemVariants}>
-              <div className="flex flex-col lg:flex-row items-start lg:items-center gap-4">
-                <div className="flex-1">
-                  <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white mb-2">
-                    Generate code from a prompt
-                  </h2>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    Examples: “I want to build a portfolio site” or “Find Fibonacci numbers”.
-                  </p>
-                </div>
-                <Link href="/generate">
-                  <motion.button
-                    className="tool-button flex items-center gap-2"
-                    whileHover={{ scale: 1.02, y: -2 }}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    Generate
-                    <ArrowRight className="w-4 h-4" />
-                  </motion.button>
-                </Link>
-              </div>
-            </motion.div>
-          </section>
-
           {/* Hero Section */}
           <section className="py-16 md:py-24">
             <motion.div className="text-center" variants={itemVariants}>
