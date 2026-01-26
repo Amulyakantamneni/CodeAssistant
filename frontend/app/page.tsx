@@ -42,20 +42,6 @@ const HOME_FUNCTIONALITIES = [
   'Integrate tools, manage APIs, and monitor performance.',
 ];
 
-const RECOMMENDED_SDKS = [
-  {
-    name: 'PostHog',
-    description: 'Feature flags, session replay, and product analytics in one.',
-  },
-  {
-    name: 'Statsig',
-    description: 'Experimentation, feature gates, and safe rollouts.',
-  },
-  {
-    name: 'Plausible / GA4',
-    description: 'Privacy-first web analytics or Google Analytics 4.',
-  },
-];
 
 export default function HomePage() {
   return (
@@ -231,36 +217,6 @@ export default function HomePage() {
           <section id="features">
             <FeatureGrid />
           </section>
-
-          {/* Recommended Tooling */}
-          <motion.section
-            className="py-10"
-            variants={itemVariants}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-          >
-            <div className="text-center mb-8">
-              <h3 className="text-2xl font-semibold text-gray-900 dark:text-white mb-2">
-                Recommended SDKs
-              </h3>
-              <p className="text-gray-600 dark:text-gray-300">
-                Best-in-class tooling if you want to plug in analytics fast.
-              </p>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {RECOMMENDED_SDKS.map((sdk) => (
-                <div key={sdk.name} className="glass-card rounded-2xl p-6">
-                  <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                    {sdk.name}
-                  </h4>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    {sdk.description}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </motion.section>
 
           {/* Bottom CTA Section */}
           <motion.section
