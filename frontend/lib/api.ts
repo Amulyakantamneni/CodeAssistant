@@ -89,6 +89,10 @@ export const api = {
       const response = await axios.post(`${API_BASE}/test`, data);
       return response.data;
     },
+    generate: async (data: CodeRequest) => {
+      const response = await axios.post(`${API_BASE}/generate`, data);
+      return response.data;
+    },
 
     generatePR: async (data: {
       original_code: string;
