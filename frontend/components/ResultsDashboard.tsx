@@ -25,16 +25,17 @@ import { useTheme } from './ThemeProvider';
 import { cn } from '@/lib/utils';
 
 const TOOL_CONFIG: Record<string, { icon: any; name: string; color: string }> = {
-  debug: { icon: Bug, name: 'Debugger', color: 'text-red-500' },
-  debugger: { icon: Bug, name: 'Debugger', color: 'text-red-500' },
-  refactor: { icon: Sparkles, name: 'Refactorizer', color: 'text-purple-500' },
-  refactorizer: { icon: Sparkles, name: 'Refactorizer', color: 'text-purple-500' },
-  optimize: { icon: Zap, name: 'Optimizer', color: 'text-yellow-500' },
-  optimizer: { icon: Zap, name: 'Optimizer', color: 'text-yellow-500' },
-  test: { icon: TestTube, name: 'Tester', color: 'text-green-500' },
-  tester: { icon: TestTube, name: 'Tester', color: 'text-green-500' },
-  pr: { icon: GitPullRequest, name: 'PR Generator', color: 'text-blue-500' },
-  'pr-generator': { icon: GitPullRequest, name: 'PR Generator', color: 'text-blue-500' },
+  generate: { icon: Sparkles, name: 'Generator', color: 'tool-blue-text' },
+  debug: { icon: Bug, name: 'Debugger', color: 'tool-blue-text' },
+  debugger: { icon: Bug, name: 'Debugger', color: 'tool-blue-text' },
+  refactor: { icon: Sparkles, name: 'Refactorizer', color: 'tool-blue-text' },
+  refactorizer: { icon: Sparkles, name: 'Refactorizer', color: 'tool-blue-text' },
+  optimize: { icon: Zap, name: 'Optimizer', color: 'tool-blue-text' },
+  optimizer: { icon: Zap, name: 'Optimizer', color: 'tool-blue-text' },
+  test: { icon: TestTube, name: 'Tester', color: 'tool-blue-text' },
+  tester: { icon: TestTube, name: 'Tester', color: 'tool-blue-text' },
+  pr: { icon: GitPullRequest, name: 'PR Generator', color: 'tool-blue-text' },
+  'pr-generator': { icon: GitPullRequest, name: 'PR Generator', color: 'tool-blue-text' },
 };
 
 const SEVERITY_CONFIG: Record<string, { icon: any; color: string; bg: string }> = {
@@ -186,6 +187,18 @@ function ResultCard({ tool, data, status, onExport }: ResultCardProps) {
         <div>
           <h4 className="font-semibold mb-2">Fixed Code</h4>
           <CodeBlock code={data.fixedCode} />
+        </div>
+      )}
+    </div>
+  );
+
+  const renderGenerateResults = (data: any) => (
+    <div className="space-y-4">
+      {data.summary && <p className="text-gray-600 dark:text-gray-300">{data.summary}</p>}
+      {data.generatedCode && (
+        <div>
+          <h4 className="font-semibold mb-2">Generated Code</h4>
+          <CodeBlock code={data.generatedCode} language={data.language || 'javascript'} />
         </div>
       )}
     </div>
@@ -644,6 +657,8 @@ function ResultCard({ tool, data, status, onExport }: ResultCardProps) {
     }
 
     switch (tool) {
+      case 'generate':
+        return renderGenerateResults(data);
       case 'debug':
       case 'debugger':
         return renderDebugResults(data);
