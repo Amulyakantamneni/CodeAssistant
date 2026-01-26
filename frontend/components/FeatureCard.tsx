@@ -74,3 +74,5 @@ export function FeatureCard({
     </Link>
   );
 }
+
+export default FeatureCard;

@@ -1,10 +1,10 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Sparkles, LucideIcon } from 'lucide-react';
+import { X, Sparkles, ChevronDown, LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface NavItem {
@@ -12,6 +12,7 @@ interface NavItem {
   href: string;
   icon: LucideIcon;
   highlighted?: boolean;
+  subItems?: { label: string; href: string }[];
 }
 
 interface MobileMenuProps {
@@ -69,6 +70,7 @@ const itemVariants = {
 
 export function MobileMenu({ isOpen, onClose, navItems }: MobileMenuProps) {
   const pathname = usePathname();
+  const [openSections, setOpenSections] = useState<string[]>([]);
 
   // Close menu on route change
   useEffect(() => {
@@ -79,6 +81,7 @@ export function MobileMenu({ isOpen, onClose, navItems }: MobileMenuProps) {
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
+      setOpenSections([]);
     } else {
       document.body.style.overflow = '';
     }
@@ -86,6 +89,12 @@ export function MobileMenu({ isOpen, onClose, navItems }: MobileMenuProps) {
       document.body.style.overflow = '';
     };
   }, [isOpen]);
+
+  const toggleSection = (label: string) => {
+    setOpenSections((prev) =>
+      prev.includes(label) ? prev.filter((item) => item !== label) : [...prev, label]
+    );
+  };
 
   return (
     <AnimatePresence>
@@ -131,6 +140,8 @@ export function MobileMenu({ isOpen, onClose, navItems }: MobileMenuProps) {
                 {navItems.map((item, index) => {
                   const isActive = pathname === item.href;
                   const Icon = item.icon;
+                  const hasSubItems = item.subItems && item.subItems.length > 0;
+                  const isOpen = openSections.includes(item.label);
 
                   return (
                     <motion.div
@@ -140,18 +151,42 @@ export function MobileMenu({ isOpen, onClose, navItems }: MobileMenuProps) {
                       initial="closed"
                       animate="open"
                     >
-                      <Link href={item.href} onClick={onClose}>
-                        <span
-                          className={cn(
-                            'mobile-nav-link flex items-center gap-3',
-                            isActive && 'mobile-nav-link-active',
-                            item.highlighted && 'mobile-nav-link-highlighted'
-                          )}
-                        >
-                          <Icon className="w-5 h-5" />
-                          {item.label}
-                        </span>
-                      </Link>
+                      <div className="flex items-center justify-between gap-2">
+                        <Link href={item.href} onClick={onClose} className="flex-1">
+                          <span
+                            className={cn(
+                              'mobile-nav-link flex items-center gap-3',
+                              isActive && 'mobile-nav-link-active',
+                              item.highlighted && 'mobile-nav-link-highlighted'
+                            )}
+                          >
+                            <Icon className="w-5 h-5" />
+                            {item.label}
+                          </span>
+                        </Link>
+                        {hasSubItems && (
+                          <button
+                            type="button"
+                            onClick={() => toggleSection(item.label)}
+                            className="p-2 rounded-lg text-gray-500 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-dark-700 transition-colors"
+                            aria-label={`Toggle ${item.label} submenu`}
+                          >
+                            <ChevronDown className={cn('w-4 h-4 transition-transform', isOpen && 'rotate-180')} />
+                          </button>
+                        )}
+                      </div>
+
+                      {hasSubItems && isOpen && (
+                        <div className="ml-10 mt-2 space-y-1">
+                          {item.subItems!.map((subItem) => (
+                            <Link key={subItem.href} href={subItem.href} onClick={onClose}>
+                              <span className="mobile-nav-link block text-sm">
+                                {subItem.label}
+                              </span>
+                            </Link>
+                          ))}
+                        </div>
+                      )}
                     </motion.div>
                   );
                 })}
@@ -165,14 +200,14 @@ export function MobileMenu({ isOpen, onClose, navItems }: MobileMenuProps) {
                   initial="closed"
                   animate="open"
                 >
-                  <Link href="/generate" onClick={onClose}>
+                  <Link href="/signup" onClick={onClose}>
                     <motion.button
                       className="w-full cta-button flex items-center justify-center gap-2 py-3"
                       whileHover={{ scale: 1.01 }}
                       whileTap={{ scale: 0.99 }}
                     >
                       <Sparkles className="w-5 h-5" />
-                      Try for Free
+                      Sign Up
                     </motion.button>
                   </Link>
                 </motion.div>
