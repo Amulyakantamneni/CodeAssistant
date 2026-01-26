@@ -12,6 +12,8 @@ interface CodeInputProps {
   setGithubUrl: (url: string) => void;
   language: string;
   setLanguage: (lang: string) => void;
+  onGeneratePrompt?: () => void;
+  isGenerating?: boolean;
 }
 
 export function CodeInput({
@@ -21,6 +23,8 @@ export function CodeInput({
   setGithubUrl,
   language,
   setLanguage,
+  onGeneratePrompt,
+  isGenerating = false,
 }: CodeInputProps) {
   const [inputMode, setInputMode] = useState<'prompt' | 'code' | 'github' | 'upload'>('prompt');
 
@@ -173,6 +177,23 @@ export function CodeInput({
               <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
                 Use plain English. We will use your prompt as the starting point for generation.
               </p>
+              <div className="mt-4 flex justify-end">
+                <motion.button
+                  onClick={onGeneratePrompt}
+                  disabled={!onGeneratePrompt || !code.trim() || isGenerating}
+                  className={cn(
+                    'tool-button',
+                    (!onGeneratePrompt || !code.trim() || isGenerating) &&
+                      'opacity-60 cursor-not-allowed'
+                  )}
+                  whileHover={
+                    onGeneratePrompt && !isGenerating && code.trim() ? { scale: 1.02, y: -2 } : {}
+                  }
+                  whileTap={onGeneratePrompt && !isGenerating && code.trim() ? { scale: 0.98 } : {}}
+                >
+                  {isGenerating ? 'Generating...' : 'Generate'}
+                </motion.button>
+              </div>
             </motion.div>
           )}
 
